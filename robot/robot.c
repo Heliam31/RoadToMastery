@@ -14,8 +14,9 @@
 #define GREEN_LED 12
 
 // TIMER POUR SYNC
-#define PSC 1024 // ->1s  // 8->0.01s
-#define PERIOD 1*(APB1_CLK)/PSC
+#define N 0.1
+#define PSC 128 // ->1s  // 8->0.01s
+#define PERIOD N*(APB1_CLK)/PSC
 
 void init_timer_sync(void) {
     TIM3_CR1 = 0;

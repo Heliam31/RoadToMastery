@@ -191,6 +191,7 @@ void qtr8rc_read(int* position) {
     TIM4_CR1 &= ~TIM_CEN;  // Disable the timer
     
     //calibrate_time(sensor_values);
+    *position = compute_position(sensor_values);
 }
 
 
