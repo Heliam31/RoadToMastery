@@ -8,6 +8,8 @@
 #include <stm32f4/tim.h>
 #include <stm32f4/adc.h>
 
+#include "qtr8rc.h"
+
 
 #define NB_QTR_SENSORS 8
 

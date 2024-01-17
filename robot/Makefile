@@ -30,6 +30,7 @@ LDFLAGS = \
 	-static \
 	-nostdinc -nostdlib \
 	-nostartfiles
+
 ADD_OBJECTS = \
 	$(STM32_ROOT)/lib/startup.o \
 	$(STM32_ROOT)/lib/tinyprintf.o \
@@ -39,12 +40,18 @@ SOURCES = $(wildcard *.c)
 HEADERS = $(wildcard *.h)
 ELVES = $(SOURCES:.c=.elf)
 
-# rules
-all: $(ELVES)
+SRC = $(wildcard *.c)
+HDR = $(wildcard *.h)
+OBJ = $(SOURCES:.c=.o)
+ELF = $(SOURCES:.c=.elf)
+EXEC=robot
 
-clean:
-	rm -f $(LOG)
-	rm $(ELVES)
+
+# rules
+all : debug_robot
+
+clean :
+	rm -rf *.o $(EXEC) $(ELF) $(LOG)
 
 openocd:
 	-rm $(LOG)
@@ -56,17 +63,34 @@ debug:
 log:
 	tail -f $(LOG)
 
-%.elf: $(ADD_OBJECTS) %.o
-	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
-
-%.o: %.c $(HEADERS)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-%.o: %.s
-	$(AS) $(ASFLAGS) -c $< -o $@
-
-%.s: %.c
-	$(CC) $(CFLAGS) -c $< -o $@ -S
+# $(EXEC): $(OBJ)
+#	$(CC) -o $@ $(OBJ) $(CFLAGS) $(GTKLIBS) $(LDFLAGS)
 
 debug_%: %.elf
 	$(GDB) $(GDB_FLAGS) $*.elf
+
+robot.elf: $(ADD_OBJECTS) $(OBJ)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+
+%.o: %.c $(HDR)
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+
+# build distribution
+DIST_FILES= \
+	Makefile \
+	STM32RT
+DIST_NAME=robot
+DATE=$(shell date +"%y%m%d")
+
+dist:
+	if [ -e $(DIST_NAME) ]; then \
+		rm -rf $(DIST_NAME); \
+	fi
+	mkdir $(DIST_NAME)
+	cp -RL $(DIST_FILES) $(DIST_NAME)
+	for f in ex*.c; do \
+		autofilter.py < $$f > $(DIST_NAME)/$$f; \
+	done
+	cd $(DIST_NAME); make; make clean
+	tar cvfz $(DIST_NAME)-$(DATE).tgz $(DIST_NAME)

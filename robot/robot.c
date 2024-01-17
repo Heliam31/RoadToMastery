@@ -10,8 +10,8 @@
 #include "qtr8rc.h"
 
 
+// DEBUG LED (GPIOD)
 #define GREEN_LED 12
-#define OUT 4
 
 // TIMER POUR SYNC
 #define PSC 1024 // ->1s  // 8->0.01s
@@ -34,11 +34,11 @@ void init_gpio_led(void) {
 void init(void) {
     init_timer_sync();
     init_gpio_led();
-    init_qtr8rc();
+    qtr8rc_init();
 }
 
 void sync(void) {
-    while(((TIM3_SR & TIM_UIF) == 0));
+    while(((TIM3_SR & TIM_UIF) == 0)) NOP;
 	TIM3_SR &= ~TIM_UIF;
     return;
 }
@@ -54,10 +54,9 @@ void eteindre_led(void) {
 int main(void) {
 
 	RCC_AHB1ENR |= RCC_GPIODEN;
-	RCC_APB1ENR |= RCC_TIM4EN;
+	RCC_APB1ENR |= RCC_TIM3EN;
 
     init();
-
     int position = 0;
 
     while(1){
