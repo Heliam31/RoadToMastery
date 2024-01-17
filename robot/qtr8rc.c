@@ -1,4 +1,3 @@
-/* Embedded Systems - Exercise 15 */
 
 #include <tinyprintf.h>
 #include <stm32f4/rcc.h>
@@ -83,6 +82,7 @@ void init_gpiod_in(void) {
     GPIOD_OTYPER &= ~(1 << IR8_LED);
 }
 
+
 void gpiod_drive_high(void) { // make sensor line an output and drive high
     GPIOD_ODR |= 1 << IR1_LED;
     GPIOD_ODR |= 1 << IR2_LED;
@@ -94,7 +94,7 @@ void gpiod_drive_high(void) { // make sensor line an output and drive high
     GPIOD_ODR |= 1 << IR8_LED;
 }
 
-void GPIO_init() {
+void init_gpio() {
     // IR GPIO init
     init_gpiod_out();
     
@@ -103,25 +103,14 @@ void GPIO_init() {
     GPIOD_OTYPER &= ~(1 << ON_LED);
 }
 
-void TIM4_init(){
+void init_tim4(){
 	TIM4_CR1 = 0;
 	TIM4_PSC = WAIT_PSC-1;
 	TIM4_ARR = PERIOD;
-
 	TIM4_EGR = TIM_UG;
 	TIM4_SR = 0;
 	TIM4_CR1 = TIM_CEN;
 
-}
-
-void QTR8_emittersOn() {
-    GPIOD_BSRR = 1 << ON_LED;
-    wait_seconds(0.0002);
-}
-
-void QTR8_emittersOff() {
-    GPIOD_BSRR = 1 << (ON_LED + 16);
-    wait_seconds(0.0002);
 }
 
 void compute_time(int *sensor_values, uint32_t elapsed_time) {
@@ -140,6 +129,20 @@ void compute_time(int *sensor_values, uint32_t elapsed_time) {
     }
 }
 
+int compute_position(int *sensor_values) {
+    int sum = 0;
+    for (int i = 0; i < NB_QTR_SENSORS; i++) {
+        sum += sensor_values[i];
+    }
+    int rsl = 0;
+    int c = 0;
+    for (int i = 0; i < NB_QTR_SENSORS; i++) {
+        rsl += sensor_values[i] * c;
+        c += 1000;
+    }
+    return rsl/sum;
+}
+
 void calibrate_time(int *sensor_values) {
     for (int i = 0; i < NB_QTR_SENSORS; i++) {
         if (sensor_values[i] <= 20)
@@ -149,7 +152,18 @@ void calibrate_time(int *sensor_values) {
     }
 }
 
-void _read(unsigned int *sensor_values) {
+void qtr8rc_init(void) {
+    RCC_AHB1ENR |= RCC_GPIOAEN;
+    RCC_AHB1ENR |= RCC_GPIODEN;
+    RCC_APB1ENR |= RCC_TIM4EN;
+    RCC_APB2ENR |= RCC_ADC1EN;
+
+    init_gpio();
+	init_tim4();
+}
+
+void qtr8rc_read(int* position) {
+    int sensor_values[NB_QTR_SENSORS] = {0,0,0,0,0,0,0,0};
     TIM4_CNT = 0;
     TIM4_SR = 0;
     TIM4_CR1 = TIM_CEN;
@@ -165,81 +179,17 @@ void _read(unsigned int *sensor_values) {
     wait_seconds(0.00001);
 
     init_gpiod_in();
-
-    int time = 0;
     uint32_t start_time = TIM4_CNT;
     elapsed_time = TIM4_CNT - start_time;
-    while (elapsed_time < _maxValue) {
+    while (elapsed_time < _maxValue) { 
+    // Calcule le temps écoulé à chaque itération
         elapsed_time = TIM4_CNT - start_time;
         compute_time(sensor_values, elapsed_time);
     }
     TIM4_CR1 &= ~TIM_CEN;  // Disable the timer
     
-    // Calcule le temps écoulé à chaque itération
-    calibrate_time(sensor_values);
-}
-
-void QTR8_read(unsigned int *sensor_values)
-{
-    
-    unsigned int off_values[NB_QTR_SENSORS];
-    unsigned char i;
-   
-    //QTR8_emittersOn();
-    _read(sensor_values);
-    //QTR8_emittersOff();
-
-}
-
-int compute_position(int* sensor_values) {
-    // TODO
-    return 0;
-}
-
-void compute_speed(int *sensor_values) {
-    int motorLeft = 0;
-    int motor_Right = 0;
-
-    if (sensor_values[3] && sensor_values[4] == 1) {
-        motorLeft = 50;
-        motor_Right = 50;
-    } else {
-        motorLeft = 0;
-        motor_Right = 0;
-    }
-
-    action_motor(motorLeft, motor_Right);
+    //calibrate_time(sensor_values);
 }
 
 
-int main() {
-    printf("\nStarting...\n");
-
-    unsigned int* sensor_values[NB_QTR_SENSORS] = {0,0,0,0,0,0,0,0};
-
-    // RCC init
-    RCC_AHB1ENR |= RCC_GPIOAEN;
-    RCC_AHB1ENR |= RCC_GPIODEN;
-    RCC_APB1ENR |= RCC_TIM4EN;
-    RCC_APB2ENR |= RCC_ADC1EN;
-
-    // initialization
-    GPIO_init();
-	TIM4_init();
-	GPIOD_BSRR = 1 << ON_LED;
-
-    // main loop
-    while(1) {
-		QTR8_read(sensor_values);
-
-        for(int i = 0; i < NB_QTR_SENSORS; i++){
-            printf("sensor[%d] = %d, \n", i+1, sensor_values[i]);
-        }
-        int position = compute_position(sensor_values);
-        printf("pos=%d\n", position);
-        printf("\n");
-    
-        compute_speed(sensor_values);
-    }
-}
 

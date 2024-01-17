@@ -7,21 +7,23 @@
 #include <stm32f4/tim.h>
 #include <stm32f4/adc.h>
 
+#include "qtr8rc.h"
+
 
 #define GREEN_LED 12
 #define OUT 4
 
 // TIMER POUR SYNC
-#define PSC 1024 // ->1  // 8->0.01
+#define PSC 1024 // ->1s  // 8->0.01s
 #define PERIOD 1*(APB1_CLK)/PSC
 
 void init_timer_sync(void) {
-    TIM4_CR1 = 0;
-	TIM4_PSC = PSC-1;
-	TIM4_ARR = PERIOD;
-	TIM4_EGR = TIM_UG;
-	TIM4_CR1 |= TIM_CEN | TIM_ARPE;
-	TIM4_SR = 0;
+    TIM3_CR1 = 0;
+	TIM3_PSC = PSC-1;
+	TIM3_ARR = PERIOD;
+	TIM3_EGR = TIM_UG;
+	TIM3_CR1 |= TIM_CEN | TIM_ARPE;
+	TIM3_SR = 0;
 }
 
 void init_gpio_led(void) {
@@ -29,44 +31,15 @@ void init_gpio_led(void) {
 	GPIOD_OTYPER &= ~(1<<GREEN_LED);
 }
 
-void init_gpio_ir(void) {
-    // code mohammed
-}
-
-void init_ir(void) {
-    init_gpio_ir();
-}
-
-void init_gpio_motor(void) {
-
-}
-
-void init_driver_motor(void) {
-    init_gpio_motor();
-    // init adc
-}
-
 void init(void) {
     init_timer_sync();
     init_gpio_led();
-    init_ir();
-    init_driver_motor();
-    // ...
-}
-
-void calc_traj(void) {
-    // code mohammed
-    return;
-}
-
-void calc_speed(int traj) {
-    // code mihai
-    return;
+    init_qtr8rc();
 }
 
 void sync(void) {
-    while(((TIM4_SR & TIM_UIF) == 0));
-	TIM4_SR &= ~TIM_UIF;
+    while(((TIM3_SR & TIM_UIF) == 0));
+	TIM3_SR &= ~TIM_UIF;
     return;
 }
 
@@ -88,8 +61,8 @@ int main(void) {
     int position = 0;
 
     while(1){
-        position = calc_traj();
-        calc_speed(position);
+        qtr8rc_read(&position);
+        printf("pos:%d\n", position);
         sync();
         allumer_led();
         sync();
