@@ -30,10 +30,10 @@ int errors[10] = {0,0,0,0,0,0,0,0,0,0};
 int errorSum = 0;
 int lastEnd = 0;	// 0 -> Left, 1 -> Right 
 int lastIdle = 0;
-const int maxSpeedRight = 100;
-const int maxSpeedLeft = 100;
-const int baseSpeedRight = 92;
-const int baseSpeedLeft = 92;
+const int maxSpeedRight = 10;
+const int maxSpeedLeft = 10;
+const int baseSpeedRight = 9;
+const int baseSpeedLeft = 9;
 
 
 void init_timer_sync(void) {
@@ -66,7 +66,7 @@ void sync(void) {
 int errors_sum(int index, int abs) {
     int sum = 0;
     for (int i = 0; i < index; i++) {
-    if (abs == 1 & errors[i] < 0) 
+    if ((abs == 1) & (errors[i] < 0)) 
         sum += -errors[i];
     else
         sum += errors[i];
@@ -75,31 +75,32 @@ int errors_sum(int index, int abs) {
 }
 
 void compute_pid(int *position, int *motorLeftSpeed, int *motorRightSpeed) {
-    int error = 4500 - *position;
+    // int error = 4500 - *position;
 
-    // save error
-    for (int i = 9; i > 0; i--) {
-        errors[i] = errors[i-1];
-    }
-    errors[0] = error;
+    // // save error
+    // for (int i = 9; i > 0; i--) {
+    //     errors[i] = errors[i-1];
+    // }
+    // errors[0] = error;
 
-    P = error;
-    I = errors_sum(5, 1);
-    D = error - lastError;
-    R = errors_sum(5, 1);
-    lastError = error;
+    // P = error;
+    // I = errors_sum(5, 1);
+    // D = error - lastError;
+    // R = errors_sum(5, 1);
+    // lastError = error;
 
-    int motorSpeed = P*Kp + I*Ki + D*Kd;
+    // int motorSpeed = P*Kp + I*Ki + D*Kd;
 
-    *motorLeftSpeed = baseSpeedLeft + motorSpeed - R*Kr;
-    *motorRightSpeed = baseSpeedRight - motorSpeed - R*Kr;
+    // *motorLeftSpeed = baseSpeedLeft + motorSpeed - R*Kr;
+    // *motorRightSpeed = baseSpeedRight - motorSpeed - R*Kr;
 
-    if (motorLeftSpeed > maxSpeedLeft) {
-        *motorLeftSpeed = maxSpeedLeft;
-    }
-    if (motorRightSpeed > maxSpeedRight) {
-        *motorRightSpeed = maxSpeedRight;
-    }
+    // if (*motorLeftSpeed > maxSpeedLeft) {
+    //     *motorLeftSpeed = maxSpeedLeft;
+    // }
+    // if (motorRightSpeed > maxSpeedRight) {
+    //     *motorRightSpeed = maxSpeedRight;
+    // }
+    return;
 }
 
 void allumer_led(void) {
@@ -114,6 +115,11 @@ int main(void) {
 
 	RCC_AHB1ENR |= RCC_GPIODEN;
 	RCC_APB1ENR |= RCC_TIM3EN;
+    RCC_AHB1ENR |= RCC_GPIOAEN;
+    RCC_APB1ENR |= RCC_TIM4EN;
+    RCC_APB2ENR |= RCC_ADC1EN;
+	RCC_APB1ENR |= RCC_TIM2EN;
+
 
     init();
     int position = 0;
@@ -130,10 +136,7 @@ int main(void) {
         sync();
         compute_pid(&position, &motorLeftSpeed, &motorRightSpeed);
         sync();
-        motor_set_speeds(motorLeftSpeed, motorRightSpeed);
+        motor_set_speeds(0, 0);
         sync();
-        motor_set_speeds(motorLeftSpeed*(-1), motorRightSpeed*(-1));
-        sync();
-        motor_set_speeds(motorLeftSpeed*0, motorRightSpeed*0);
     }
 }

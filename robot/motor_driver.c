@@ -1,4 +1,5 @@
 
+#include <stdlib.h>
 #include <tinyprintf.h>
 #include <stm32f4/rcc.h>
 #include <stm32f4/gpio.h>
@@ -29,7 +30,7 @@
 //ARR
 #define TIM2ARR   4199
 
-void init_gpio(void) {
+void init_gpio_motor(void) {
     //Moder ALT
 	GPIOA_MODER = REP_BITS(GPIOA_MODER, motorPin1*2,2,GPIO_MODER_ALT);
 	GPIOA_MODER = REP_BITS(GPIOA_MODER, motorPin2*2,2,GPIO_MODER_ALT);
@@ -42,7 +43,7 @@ void init_gpio(void) {
 	GPIOA_AFRL = REP_BITS(GPIOA_AFRL, motorPin4*4, 4, 1);
 }
 
-void init_timer(void){
+void init_timer_motor(void){
 	// Init TIM2
 	TIM2_CR1 = 0;
 	TIM2_CCMR1 = TIM_CCS1S_OUT|TIM_OC1M_PWM1|TIM_CCS2S_OUT|TIM_OC2M_PWM1;
@@ -64,11 +65,9 @@ void init_timer(void){
 	TIM2_CR1 = TIM_CEN|TIM_ARPE;
 }	
 
-void moteur_init(void){
-	RCC_AHB1ENR |= RCC_GPIOAEN;
-	RCC_APB1ENR |= RCC_TIM2EN;
-    init_gpio();
-	init_timer();
+void motor_init(void){
+    init_gpio_motor();
+	init_timer_motor();
 }
 
 void motor_set_speeds(int speedMotorLeft, int speedMotorRight) {

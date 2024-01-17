@@ -96,7 +96,7 @@ void gpiod_drive_high(void) { // make sensor line an output and drive high
     GPIOD_ODR |= 1 << IR8_LED;
 }
 
-void init_gpio() {
+void init_gpio_qtr8rc() {
     // IR GPIO init
     init_gpiod_out();
     // LEDON GPIO init
@@ -104,7 +104,7 @@ void init_gpio() {
     GPIOD_OTYPER &= ~(1 << ON_LED);
 }
 
-void init_tim4(){
+void init_tim4_qtr8rc(){
 	TIM4_CR1 = 0;
 	TIM4_PSC = WAIT_PSC-1;
 	TIM4_ARR = PERIOD;
@@ -154,13 +154,8 @@ void calibrate_time(int *sensor_values) {
 }
 
 void qtr8rc_init(void) {
-    RCC_AHB1ENR |= RCC_GPIOAEN;
-    RCC_AHB1ENR |= RCC_GPIODEN;
-    RCC_APB1ENR |= RCC_TIM4EN;
-    RCC_APB2ENR |= RCC_ADC1EN;
-
-    init_gpio();
-	init_tim4();
+    init_gpio_qtr8rc();
+	init_tim4_qtr8rc();
 }
 
 void qtr8rc_read(int* position) {
