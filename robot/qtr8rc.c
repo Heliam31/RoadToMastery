@@ -99,7 +99,6 @@ void gpiod_drive_high(void) { // make sensor line an output and drive high
 void init_gpio() {
     // IR GPIO init
     init_gpiod_out();
-    
     // LEDON GPIO init
     GPIOD_MODER = REP_BITS(GPIOD_MODER, ON_LED * 2, 2, GPIO_MODER_OUT);
     GPIOD_OTYPER &= ~(1 << ON_LED);

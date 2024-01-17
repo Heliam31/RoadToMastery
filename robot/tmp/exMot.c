@@ -28,7 +28,7 @@
 
 //ARR
 #define TIM2ARR   4199
-	 
+
 void init_Moteur(){
 	//Moder ALT
 	GPIOA_MODER = REP_BITS(GPIOA_MODER, motorPin1*2,2,GPIO_MODER_ALT);
