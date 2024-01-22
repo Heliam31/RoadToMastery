@@ -27,9 +27,9 @@
 // static const int leds[] = {IR_LED}
 
 // TIM4
-#define N 0.1
-#define WAIT_PSC 	128
-#define WAIT_DELAY	(N*APB1_CLK)/WAIT_PSC
+// #define N 0.1
+#define WAIT_PSC 	1000
+#define WAIT_DELAY	APB1_CLK/WAIT_PSC
 
 int PERIOD = WAIT_DELAY;
 int _maxValue = 4046;
@@ -161,16 +161,12 @@ void qtr8rc_init(void) {
 
 void qtr8rc_read(int* position) {
     GPIOD_BSRR |= 1 << ON_LED;
-    int sensor_values[NB_QTR_SENSORS] = {0,0,0,0,0,0,0,0};
+    int sensor_values[NB_QTR_SENSORS] = {_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue};
     TIM4_CNT = 0;
     TIM4_SR = 0;
     TIM4_CR1 = TIM_CEN;
 
     uint32_t elapsed_time = 0;
-    // IR GPIO init
-    for (int led = 0; led < NB_QTR_SENSORS; led++) {
-        sensor_values[led] = _maxValue;
-    }
     init_gpiod_out();
     gpiod_drive_high();
 
@@ -183,10 +179,11 @@ void qtr8rc_read(int* position) {
     // Calcule le temps écoulé à chaque itération
         elapsed_time = TIM4_CNT - start_time;
         compute_time(sensor_values, elapsed_time);
+        // printf("-> %d\n", elapsed_time);
     }
     TIM4_CR1 &= ~TIM_CEN;  // Disable the timer
 
     //calibrate_time(sensor_values);
-    *position = compute_position(sensor_values);
     GPIOD_BSRR |= 1 << (ON_LED + 16);
+    *position = compute_position(sensor_values);
 }

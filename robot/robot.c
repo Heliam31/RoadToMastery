@@ -53,6 +53,7 @@ void init_gpio_led(void) {
 void init(void) {
     init_timer_sync();
     init_gpio_led();
+
     qtr8rc_init();
     motor_init();
 }
@@ -79,8 +80,8 @@ void compute_pid(int *position, int *motorLeftSpeed, int *motorRightSpeed) {
 
     // // save error
     // for (int i = 9; i > 0; i--) {
-    //     int tmp = error[i-1];
-    //     errors[i] = tmp;
+    //     int prev_value = error[i-1];
+    //     errors[i] = prev_value;
     // }
     // errors[0] = error;
 
