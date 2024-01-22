@@ -36,14 +36,10 @@ ADD_OBJECTS = \
 	$(STM32_ROOT)/lib/tinyprintf.o \
 	$(STM32_ROOT)/lib/asm.o
 
-SOURCES = $(wildcard *.c)
-HEADERS = $(wildcard *.h)
-ELVES = $(SOURCES:.c=.elf)
-
 SRC = $(wildcard *.c)
 HDR = $(wildcard *.h)
-OBJ = $(SOURCES:.c=.o)
-ELF = $(SOURCES:.c=.elf)
+OBJ = $(SRC:.c=.o)
+ELF = $(SRC:.c=.elf)
 EXEC=robot
 
 

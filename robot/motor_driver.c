@@ -19,7 +19,6 @@
 #define BLUE_LED	15
 
 //Moteurs Branchés sur pins PA0-PA3
-
 //Motor 1
 #define motorPin1  0
 #define motorPin2  1

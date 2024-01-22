@@ -14,14 +14,14 @@
 #define NB_QTR_SENSORS 8
 
 // GPIOD
-#define IR1_LED    1
-#define IR2_LED    2
-#define IR3_LED    3
-#define IR4_LED    10
-#define IR5_LED    9
-#define IR6_LED    6
-#define IR7_LED    7
-#define IR8_LED    8
+#define IR1_LED    9
+#define IR2_LED    10
+#define IR3_LED    1
+#define IR4_LED    2
+#define IR5_LED    3
+#define IR6_LED    4
+#define IR7_LED    5
+#define IR8_LED    6
 #define ON_LED    11
 
 // TIM4

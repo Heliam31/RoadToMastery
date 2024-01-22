@@ -79,7 +79,8 @@ void compute_pid(int *position, int *motorLeftSpeed, int *motorRightSpeed) {
 
     // // save error
     // for (int i = 9; i > 0; i--) {
-    //     errors[i] = errors[i-1];
+    //     int tmp = error[i-1];
+    //     errors[i] = tmp;
     // }
     // errors[0] = error;
 
