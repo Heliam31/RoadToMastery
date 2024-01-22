@@ -16,12 +16,12 @@
 // GPIOD
 #define IR1_LED    9
 #define IR2_LED    10
-#define IR3_LED    1
-#define IR4_LED    2
-#define IR5_LED    3
-#define IR6_LED    4
-#define IR7_LED    5
-#define IR8_LED    6
+#define IR3_LED    0
+#define IR4_LED    1
+#define IR5_LED    2
+#define IR6_LED    3
+#define IR7_LED    6
+#define IR8_LED    7
 #define ON_LED    11
 
 // TIM4
@@ -117,10 +117,10 @@ void init_tim4_qtr8rc(){
 void compute_time(int *sensor_values, uint32_t elapsed_time) {
     for (unsigned int led = 1; led <= NB_QTR_SENSORS; led++) {
         int tmp;
-        if (led == 4)
-            tmp = 10;
-        else if (led == 5)
-            tmp = 9;
+        if (led == 1)
+            tmp = IR1_LED;
+        else if (led == 2)
+            tmp = IR2_LED;
         else 
             tmp = led;
         
