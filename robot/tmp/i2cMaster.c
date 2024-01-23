@@ -17,16 +17,16 @@
 #define RED_LED		14
 #define BLUE_LED	15
 
-//I2C ports (GPIOA)
-#define DATA 10
-#define CLOCK 9
+//I2C ports (GPIOB)
+#define SDA 9
+#define SCL 8
 
 // these should go to cs43l22 related headers
-#define CS43L22_ADDRESS 0x94U
-#define CS43L22_REG_ID  0x01
-#define CS43L22_CHIP_ID 0x1C // first 5 bits of reg
+#define ADDRESS 0x55
+#define REGID  0x01
+#define CHIPID 0x1C // first 5 bits of reg
 
-volatile uint8_t DeviceAddr = CS43L22_ADDRESS;
+volatile uint8_t DeviceAddr = ADDRESS;
 
 /*************************************************
 * function declarations
@@ -47,24 +47,24 @@ static inline void __i2c_stop() {
 void i2c_write(uint8_t regaddr, uint8_t data) {
     // send start condition
     __i2c_start();
-
+    printf("started");
     // send chipaddr in write mode
     // wait until address is sent
     I2C1_DR = DeviceAddr;
     while (!(I2C1_SR1 & I2C_SR1_ADDR));
     // dummy read to clear flags
     (void)I2C1_SR2; // clear addr condition
-
+    printf("sorti while1");
     // send MAP byte with auto increment off
     // wait until byte transfer complete (BTF)
     I2C1_DR = regaddr;
     while (!(I2C1_SR1 & I2C_SR1_BTF));
-
+    printf("sorti while2");
     // send data
     // wait until byte transfer complete
     I2C1_DR = data;
     while (!(I2C1_SR1 & I2C_SR1_BTF));
-
+    printf("sorti while3");
     // send stop condition
     __i2c_stop();
 }
@@ -138,7 +138,6 @@ void init_NVIC(){
 int main(void)
 {
     /* set system clock to 168 Mhz */
-    set_sysclk_to_168();
 
     //*******************************
     // setup LEDs - GPIOD 12,13,14,15
@@ -158,13 +157,13 @@ int main(void)
     
     // setup I2C pins
     RCC_AHB1ENR |= RCC_GPIOBEN;
-    GPIOB_MODER = REP_BITS(GPIOD_MODER, 6*2, 2, GPIO_MODER_ALT);
-    GPIOB_AFRL = REP_BITS(GPIOA_AFRL, 6*4, 4, 2);
-    GPIOB_OTYPER = GPIOB_OTYPER && ~(1<<6);
+    GPIOB_MODER = REP_BITS(GPIOB_MODER, SCL*2, 2, GPIO_MODER_ALT);
+    GPIOB_AFRL = REP_BITS(GPIOB_AFRL, SCL*4, 4, 2);
+    GPIOB_OTYPER = GPIOB_OTYPER && ~(1<<SCL);
 
-    GPIOB_MODER = REP_BITS(GPIOD_MODER, 9*2, 2, GPIO_MODER_ALT);
-    GPIOB_AFRL = REP_BITS(GPIOA_AFRL, 9*4, 4, 2);
-    GPIOB_OTYPER = GPIOB_OTYPER && ~(1<<9);
+    GPIOB_MODER = REP_BITS(GPIOB_MODER, SDA*2, 2, GPIO_MODER_ALT);
+    GPIOB_AFRL = REP_BITS(GPIOB_AFRL, SDA*4, 4, 2);
+    GPIOB_OTYPER = GPIOB_OTYPER && ~(1<<SDA);
 
     // reset and clear reg
 
@@ -212,13 +211,14 @@ int main(void)
 
     // activate CS43L22
     GPIOD_BSRR = (1<<4);
-
+    
     // read Chip ID - first 5 bits of CHIP_ID_ADDR
-    uint8_t ret = i2c_read(CS43L22_REG_ID);
+    // uint8_t ret = i2c_read(REGID);
+    i2c_write(DeviceAddr, 134569);
 
-    if ((ret >> 3) != CS43L22_CHIP_ID) {
-        GPIOD_BSRR = (1 << 13); // orange led on error
-    }
+    // if ((ret >> 3) != CHIPID) {
+    //     GPIOD_BSRR = (1 << 13); // orange led on error
+    // }
 
     while(1)
     {

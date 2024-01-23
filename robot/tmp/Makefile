@@ -79,6 +79,8 @@ debug_sonar: sonar.elf
 
 debug_ctrl_moteur: ctrl_moteur.elf
 	$(GDB) $(GDB_FLAGS) $^
+debug_%: %.elf
+	$(GDB) $(GDB_FLAGS) $*.elf
 
 # build distribution
 DIST_FILES = \
