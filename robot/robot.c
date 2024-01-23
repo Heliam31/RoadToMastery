@@ -20,10 +20,16 @@
 
 
 // PID
-float Kp = 0.002; //set up the constants value
-float Ki = 0.001;
-float Kd = 15;
-float Kr = 0;
+// float Kp = 0.002; //set up the constants value
+// float Ki = 0.001;
+// float Kd = 15;
+// float Kr = 0;
+
+int Kp = 2;
+int Ki = 1;
+int Kd = 1500;
+int Kr = 0;
+
 int P, I, D, R;
 int lastError = 0;
 int errors[10] = {0,0,0,0,0,0,0,0,0,0};
@@ -75,34 +81,44 @@ int errors_sum(int index, int abs) {
     return sum;
 }
 
+void save_error(int error) {
+    // save error
+    errors[9] = errors[8];
+    errors[8] = errors[7];
+    errors[7] = errors[6];
+    errors[6] = errors[5];
+    errors[5] = errors[4];
+    errors[4] = errors[3];
+    errors[3] = errors[2];
+    errors[2] = errors[1];
+    errors[1] = errors[0];
+    errors[0] = error;
+}
+
 void compute_pid(int *position, int *motorLeftSpeed, int *motorRightSpeed) {
-    // int error = 4500 - *position;
+    int error = 4500 - *position;
 
-    // // save error
-    // for (int i = 9; i > 0; i--) {
-    //     int prev_value = error[i-1];
-    //     errors[i] = prev_value;
-    // }
-    // errors[0] = error;
+    printf("error = %d \n", error);
 
-    // P = error;
-    // I = errors_sum(5, 1);
-    // D = error - lastError;
-    // R = errors_sum(5, 1);
-    // lastError = error;
+    save_error(error);
 
-    // int motorSpeed = P*Kp + I*Ki + D*Kd;
+    P = error;
+    I = errors_sum(5, 1);
+    D = error - lastError;
+    R = errors_sum(5, 1);
+    lastError = error;
 
-    // *motorLeftSpeed = baseSpeedLeft + motorSpeed - R*Kr;
-    // *motorRightSpeed = baseSpeedRight - motorSpeed - R*Kr;
+    int motorSpeed = (P*Kp + I*Ki + D*Kd);
 
-    // if (*motorLeftSpeed > maxSpeedLeft) {
-    //     *motorLeftSpeed = maxSpeedLeft;
-    // }
-    // if (motorRightSpeed > maxSpeedRight) {
-    //     *motorRightSpeed = maxSpeedRight;
-    // }
-    return;
+    *motorLeftSpeed = baseSpeedLeft + motorSpeed - R*Kr;
+    *motorRightSpeed = baseSpeedRight - motorSpeed - R*Kr;
+
+    if (*motorLeftSpeed > maxSpeedLeft) {
+        *motorLeftSpeed = maxSpeedLeft;
+    }
+    if (motorRightSpeed > maxSpeedRight) {
+        *motorRightSpeed = maxSpeedRight;
+    }
 }
 
 void allumer_led(void) {
@@ -137,6 +153,8 @@ int main(void) {
         eteindre_led();
         sync();
         compute_pid(&position, &motorLeftSpeed, &motorRightSpeed);
+        printf("motorLeft = %d\n", motorLeftSpeed);
+        printf("motorRight = %d\n", motorRightSpeed);
         sync();
         motor_set_speeds(0, 0);
         sync();
