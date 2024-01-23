@@ -27,9 +27,9 @@
 // static const int leds[] = {IR_LED}
 
 // TIM4
-// #define N 0.1
+#define N 1
 #define WAIT_PSC 	1000
-#define WAIT_DELAY	APB1_CLK/WAIT_PSC
+#define WAIT_DELAY	(N*APB1_CLK)/WAIT_PSC
 
 int PERIOD = WAIT_DELAY;
 int _maxValue = 4046;
