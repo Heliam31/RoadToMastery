@@ -171,10 +171,10 @@ int main(void)
     GPIOB_OTYPER &= (1<<SDA);
 
     // reset and clear reg
-    I2C1_CR2 = 42;
+    //I2C1_CR2 = 42;
 
-    I2C1_CR1 |= I2C_CR1_SWRST;
-    I2C1_CR1 &= ~I2C_CR1_SWRST;
+    // I2C1_CR1 |= I2C_CR1_SWRST;
+    // I2C1_CR1 &= ~I2C_CR1_SWRST;
 
     I2C1_CR2 |= (I2C_CR2_ITERREN); // enable error interrupt
 
