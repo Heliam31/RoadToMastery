@@ -1,0 +1,88 @@
+
+# configuration
+APP = main
+STLINK_ROOT=stlink-1.5.1/build/Release
+LOG = stm32f4.log
+#GDB = gdb-multiarch
+GDB = gdb
+GDB_FLAGS=-command ../scripts/gdbinit
+
+# rules
+all:
+	cd src; $(MAKE) all
+
+clean:
+	rm -f $(LOG)
+	cd src; $(MAKE) clean
+
+openocd:
+	-rm $(LOG)
+	openocd -f scripts/openocd.cfg
+
+debug:
+	gdb-multiarch src/$(APP).elf
+
+log:
+	tail -f $(LOG)
+
+
+# exercises
+ex1:
+	cd src; $(MAKE) ex1.elf
+
+ex2:
+	cd src; $(MAKE) ex2.elf
+
+ex3:
+	cd src; $(MAKE) ex3.elf
+
+ex4:
+	cd src; $(MAKE) ex4.elf
+
+ex5:
+	cd src; $(MAKE) ex5.elf
+
+debug_ex1: ex1
+	cd src; $(GDB) $(GDB_FLAGS) ex1.elf
+
+debug_ex2: ex2
+	cd src; $(GDB) $(GDB_FLAGS) ex2.elf
+
+debug_ex3: ex3
+	cd src; $(GDB) $(GDB_FLAGS) ex3.elf
+
+debug_ex4: ex4
+	cd src; $(GDB) $(GDB_FLAGS) ex4.elf
+
+debug_ex5: ex5
+	cd src; $(GDB) $(GDB_FLAGS) ex5.elf
+
+
+# build distribution
+DIST_FILES = \
+	COPYING.md \
+	.gdbinit \
+	include \
+	scripts
+DIST_SRC = \
+	src/Makefile \
+	src/startup.c \
+	src/tinyprintf.c \
+	src/ex?.c
+DIST_NAME=labwork1
+
+dist:
+	if [ -e $(DIST_NAME) ]; then \
+		rm -rf $(DIST_NAME); \
+	fi
+	mkdir $(DIST_NAME)
+	cp -R $(DIST_FILES) $(DIST_NAME)
+	mkdir $(DIST_NAME)/src
+	cp scripts/Makefile.014 $(DIST_NAME)/Makefile
+	for f in $(DIST_SRC); do \
+		autofilter.py < $$f > $(DIST_NAME)/$$f; \
+	done
+	cd $(DIST_NAME); make; make clean
+	tar cvfz $(DIST_NAME).tgz $(DIST_NAME)
+
+
