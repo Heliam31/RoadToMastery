@@ -24,7 +24,8 @@ CFLAGS += \
 	-mcpu=cortex-m4 \
 	-mfpu=fpv4-sp-d16 \
 	-I $(STM32_ROOT)/include \
-	-g3
+	-g3 \
+	-u_printf_float
 
 LDFLAGS = \
 	-static \

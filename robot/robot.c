@@ -25,12 +25,11 @@
 // float Kd = 15;
 // float Kr = 0;
 
-int Kp = 2;
-int Ki = 1;
-int Kd = 1500;
-int Kr = 0;
+int Kp = 1;
+int Ki = 0;
+int Kd = 0;
 
-int P, I, D, R;
+int P, I, D;
 int lastError = 0;
 int errors[10] = {0,0,0,0,0,0,0,0,0,0};
 int errorSum = 0;
@@ -73,7 +72,7 @@ void sync(void) {
 int errors_sum(int index, int abs) {
     int sum = 0;
     for (int i = 0; i < index; i++) {
-    if ((abs == 1) & (errors[i] < 0)) 
+    if ((abs == 1) && (errors[i] < 0)) 
         sum += -errors[i];
     else
         sum += errors[i];
@@ -95,30 +94,46 @@ void save_error(int error) {
     errors[0] = error;
 }
 
-void compute_pid(int *position, int *motorLeftSpeed, int *motorRightSpeed) {
-    int error = 4500 - *position;
+int abs(int x) {
+    return x < 0 ? -x : x;
+}
 
-    printf("error = %d \n", error);
+int min(int x, int y) {
+    return x < y ? x : y;
+}
+
+int max(int x, int y) {
+    return x < y ? y : x;
+}
+
+void compute_pid(int *position, int *motorLeftSpeed, int *motorRightSpeed) {
+    int error = 4100 - *position;
+
+    //printf("error = %d \n", error);
 
     save_error(error);
 
     P = error;
     I = errors_sum(5, 1);
     D = error - lastError;
-    R = errors_sum(5, 1);
     lastError = error;
 
     int motorSpeed = (P*Kp + I*Ki + D*Kd);
+    
+    printf("motorSpeed:%d\n", motorSpeed);
 
-    *motorLeftSpeed = baseSpeedLeft + motorSpeed - R*Kr;
-    *motorRightSpeed = baseSpeedRight - motorSpeed - R*Kr;
+    *motorLeftSpeed = (baseSpeedLeft + motorSpeed)/100;
+    *motorRightSpeed = (baseSpeedRight - motorSpeed)/100;
 
-    if (*motorLeftSpeed > maxSpeedLeft) {
-        *motorLeftSpeed = maxSpeedLeft;
-    }
-    if (motorRightSpeed > maxSpeedRight) {
-        *motorRightSpeed = maxSpeedRight;
-    }
+    printf("l = %d\n", *motorLeftSpeed);
+    printf("r = %d\n", *motorRightSpeed);
+
+
+    *motorLeftSpeed = max(-1, min(*motorLeftSpeed, maxSpeedLeft));
+    *motorRightSpeed = max(-1, min(*motorRightSpeed, maxSpeedRight));
+
+    *motorLeftSpeed = *motorLeftSpeed + maxSpeedLeft - (abs(error)/1000)*maxSpeedLeft;
+    *motorRightSpeed = *motorRightSpeed + maxSpeedRight - (abs(error)/1000)*maxSpeedRight;
 }
 
 void allumer_led(void) {
@@ -128,7 +143,6 @@ void allumer_led(void) {
 void eteindre_led(void) {
     GPIOD_BSRR = 1 << (GREEN_LED + 16);
 }
-
 int main(void) {
 
     RCC_AHB1ENR |= RCC_GPIOAEN;
@@ -147,16 +161,20 @@ int main(void) {
     while(1){
         qtr8rc_read(&position);
         printf("pos:%d\n", position);
-        sync();
-        allumer_led();
-        sync();
-        eteindre_led();
-        sync();
+        // allumer_led();
+
+        // sync();
+
+        double i = 1.5;
+        double t = i - i;
+
         compute_pid(&position, &motorLeftSpeed, &motorRightSpeed);
         printf("motorLeft = %d\n", motorLeftSpeed);
         printf("motorRight = %d\n", motorRightSpeed);
-        sync();
-        motor_set_speeds(0, 0);
-        sync();
+
+        // sync();
+        
+        motor_set_speeds(motorLeftSpeed, motorRightSpeed);
+        // eteindre_led();
     }
 }
