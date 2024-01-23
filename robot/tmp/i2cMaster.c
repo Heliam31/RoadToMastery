@@ -17,24 +17,23 @@
 #define RED_LED		14
 #define BLUE_LED	15
 
-//I2C ports (GPIOA)
-#define DATA 10
-#define CLOCK 9
+//I2C ports (GPIOB)
+#define SDA 9
+#define SCL 8
 
 // these should go to cs43l22 related headers
-#define CS43L22_ADDRESS 0x94U
-#define CS43L22_REG_ID  0x01
-#define CS43L22_CHIP_ID 0x1C // first 5 bits of reg
+#define ADDRESS 0x55
+#define REGID  0x01
+#define CHIPID 0x1C // first 5 bits of reg
 
-volatile uint8_t DeviceAddr = CS43L22_ADDRESS;
+volatile uint8_t DeviceAddr = ADDRESS;
 
 /*************************************************
 * function declarations
 *************************************************/
 
-int main(void);
-
 static inline void __i2c_start() {
+
     I2C1_CR1 |= I2C_CR1_START;
     while(!(I2C1_SR1 & I2C_SR1_SB));
 }
@@ -46,25 +45,26 @@ static inline void __i2c_stop() {
 
 void i2c_write(uint8_t regaddr, uint8_t data) {
     // send start condition
+    printf("avant start\n");
     __i2c_start();
-
+    printf("started\n");
     // send chipaddr in write mode
     // wait until address is sent
     I2C1_DR = DeviceAddr;
     while (!(I2C1_SR1 & I2C_SR1_ADDR));
     // dummy read to clear flags
     (void)I2C1_SR2; // clear addr condition
-
+    printf("sorti while1\n");
     // send MAP byte with auto increment off
     // wait until byte transfer complete (BTF)
     I2C1_DR = regaddr;
     while (!(I2C1_SR1 & I2C_SR1_BTF));
-
+    printf("sorti while2");
     // send data
     // wait until byte transfer complete
     I2C1_DR = data;
     while (!(I2C1_SR1 & I2C_SR1_BTF));
-
+    printf("sorti while3");
     // send stop condition
     __i2c_stop();
 }
@@ -138,91 +138,57 @@ void init_NVIC(){
 int main(void)
 {
     /* set system clock to 168 Mhz */
-    set_sysclk_to_168();
 
-    //*******************************
-    // setup LEDs - GPIOD 12,13,14,15
-    //*******************************
     RCC_AHB1ENR |= RCC_GPIODEN;
+    RCC_AHB1ENR |= RCC_GPIOBEN;
+    RCC_APB1ENR |= RCC_I2C1EN;
+
     for(int i = 12; i<=15; i++){
 	GPIOD_MODER = REP_BITS(GPIOD_MODER, i*2, 2, GPIO_MODER_OUT);
-	GPIOD_OTYPER = GPIOD_OTYPER && ~(1<<i);
+	GPIOD_OTYPER &= ~(1<<i);
 	}
 
-    //*******************************
-    // setup I2C - GPIOB 6, 9
-    //*******************************
-    // enable I2C clock
-
-    RCC_APB1ENR |= RCC_I2C1EN;
     
-    // setup I2C pins
-    RCC_AHB1ENR |= RCC_GPIOBEN;
-    GPIOB_MODER = REP_BITS(GPIOD_MODER, 6*2, 2, GPIO_MODER_ALT);
-    GPIOB_AFRL = REP_BITS(GPIOA_AFRL, 6*4, 4, 2);
-    GPIOB_OTYPER = GPIOB_OTYPER && ~(1<<6);
+    GPIOB_MODER = REP_BITS(GPIOB_MODER, SCL*2, 2, GPIO_MODER_ALT);
+    GPIOB_AFRH = REP_BITS(GPIOB_AFRH, 0*4, 4, 4);
+    GPIOB_PUPDR = REP_BITS(GPIOA_PUPDR, SCL*2 , 2, GPIO_PUPDR_PD);
+    GPIOB_OTYPER &= ~(1<<SCL);
 
-    GPIOB_MODER = REP_BITS(GPIOD_MODER, 9*2, 2, GPIO_MODER_ALT);
-    GPIOB_AFRL = REP_BITS(GPIOA_AFRL, 9*4, 4, 2);
-    GPIOB_OTYPER = GPIOB_OTYPER && ~(1<<9);
+    GPIOB_MODER = REP_BITS(GPIOB_MODER, SDA*2, 2, GPIO_MODER_ALT);
+    GPIOB_AFRH = REP_BITS(GPIOB_AFRH, 1*4, 4, 4);
+    GPIOB_PUPDR = REP_BITS(GPIOA_PUPDR, SDA*2 , 2, GPIO_PUPDR_PD);
+    GPIOB_OTYPER &= ~(1<<SDA);
 
     // reset and clear reg
+    I2C1_CR2 = 42;
 
-    I2C1_CR1 = I2C_CR1_SWRST;
-    I2C1_CR1 = 0;
+    I2C1_CR1 |= I2C_CR1_SWRST;
+    I2C1_CR1 &= ~I2C_CR1_SWRST;
 
     I2C1_CR2 |= (I2C_CR2_ITERREN); // enable error interrupt
 
-    // fPCLK1 must be at least 2 Mhz for SM mode
-    //        must be at least 4 Mhz for FM mode
-    //        must be multiple of 10Mhz to reach 400 kHz
-    // DAC works at 100 khz (SM mode)
-    // For SM Mode:
-    //    Thigh = CCR * TPCLK1
-    //    Tlow  = CCR * TPCLK1
-    // So to generate 100 kHz SCL frequency
-    // we need 1/100kz = 10us clock speed
-    // Thigh and Tlow needs to be 5us each
-    // Let's pick fPCLK1 = 10Mhz, TPCLK1 = 1/10Mhz = 100ns
-    // Thigh = CCR * TPCLK1 => 5us = CCR * 100ns
-    // CCR = 50
-    I2C1_CR2 |= (10 << 0); // 10Mhz periph clock
-    I2C1_CCR |= (50 << 0);
-    // Maximum rise time.
-    // Calculation is (maximum_rise_time / fPCLK1) + 1
-    // In SM mode maximum allowed SCL rise time is 1000ns
-    // For TPCLK1 = 100ns => (1000ns / 100ns) + 1= 10 + 1 = 11
-    I2C1_TRISE |= (11 << 0); // program TRISE to 11 for 100khz
-    // set own address to 00 - not really used in master mode
-    I2C1_OAR1 |= (0x00 << 1);
-    I2C1_OAR1 |= (1 << 14); // bit 14 should be kept at 1 according to the datasheet
+    // I2C1_CR2 |= (10 << 0); // 10Mhz periph clock
+    // I2C1_CCR |= (50 << 0);
 
+    // I2C1_TRISE |= (11 << 0); // program TRISE to 11 for 100khz
+
+    // // I2C1_OAR1 |= (0x00 << 1);
+    I2C1_OAR1 |= (1 << 14); // bit 14 should be kept at 1 according to the datasheet
+    I2C1_CR2 = 0x30;
+    I2C1_CCR = 0x8028;
+    I2C1_TRISE = 0xf;
     // enable error interrupt from NVIC
 
     init_NVIC();
 
-    I2C1_CR1 |= I2C_CR1_PE; // enable i2c
+    I2C1_CR1 |= I2C_CR1_ACK | I2C_CR1_PE; // enable i2c
 
-    //*******************************
-    // setup reset pin for CS43L22 - GPIOD 4
-    //*******************************
-
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, 4*2, 2, GPIO_MODER_OUT);
-	GPIOD_OTYPER = GPIOD_OTYPER && ~(1<<4);
-
-    // activate CS43L22
-    GPIOD_BSRR = (1<<4);
-
-    // read Chip ID - first 5 bits of CHIP_ID_ADDR
-    uint8_t ret = i2c_read(CS43L22_REG_ID);
-
-    if ((ret >> 3) != CS43L22_CHIP_ID) {
-        GPIOD_BSRR = (1 << 13); // orange led on error
-    }
+    
 
     while(1)
     {
-        GPIOD_BSRR = (1 << 12); // orange led on error
+        GPIOD_BSRR = (1 << 13); // orange led on error
+        i2c_write(DeviceAddr, 134569);
     }
     return 0;
 }

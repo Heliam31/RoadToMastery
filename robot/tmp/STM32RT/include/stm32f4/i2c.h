@@ -20,6 +20,7 @@
 
 //I2C_CR1
 #define I2C_CR1_PE          (1 << 0)
+#define I2C_CR1_ACK         (1 << 10)
 #define I2C_CR1_START       (1 << 8)
 #define I2C_CR1_STOP        (1 << 9)
 #define I2C_CR1_SWRST       (1 << 15)
