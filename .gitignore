@@ -1,3 +1,4 @@
-*.o
-*.elf
+robot/*.o
+robot/*.elf
+robot/.vscode
 .vscode
