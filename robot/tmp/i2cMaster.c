@@ -31,6 +31,7 @@ volatile uint8_t DeviceAddr = CS43L22_ADDRESS;
 /*************************************************
 * function declarations
 *************************************************/
+
 int main(void);
 
 static inline void __i2c_start() {
@@ -113,6 +114,24 @@ void I2C1_ER_IRQHandler(){
     GPIOD_BSRR = (1 << 14); // red LED
 }
 
+void init_NVIC(){
+	DISABLE_IRQS;
+
+	//NVIC
+	NVIC_ICER(I2C1_ER_IRQ >> 5) = 1 << (I2C1_ER_IRQ & 0X1f);
+	NVIC_IRQ(I2C1_ER_IRQ) = (uint32_t)I2C1_ER_IRQHandler;
+	NVIC_IPR(I2C1_ER_IRQ) = 0;
+
+	//purge IRQ
+	NVIC_ICPR(I2C1_ER_IRQ >> 5) = 1<<(I2C1_ER_IRQ & 0X1f);
+
+	//enable IRQ
+	NVIC_ISER(I2C1_ER_IRQ >> 5) = 1 <<(I2C1_ER_IRQ & 0X1f);
+
+	//start
+	ENABLE_IRQS;
+}
+
 /*************************************************
 * main code starts from here
 *************************************************/
@@ -180,8 +199,7 @@ int main(void)
 
     // enable error interrupt from NVIC
 
-    NVIC_SetPriority(I2C1_ER_IRQn, 1);
-    NVIC_EnableIRQ(I2C1_ER_IRQn);
+    init_NVIC();
 
     I2C1_CR1 |= I2C_CR1_PE; // enable i2c
 

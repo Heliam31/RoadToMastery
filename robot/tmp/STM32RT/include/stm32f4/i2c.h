@@ -39,4 +39,7 @@
 //I2C_OAR1
 #define I2C_OAR1_14        (1 << 14) //Always keep at 1
 
+// interrupts
+#define I2C1_ER_IRQ	32
+
 #endif
