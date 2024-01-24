@@ -22,13 +22,13 @@
 #define IR6_LED    3
 #define IR7_LED    6
 #define IR8_LED    7
+const int IR_LEDS[8] = {IR1_LED, IR2_LED, IR3_LED, IR4_LED, IR5_LED, IR6_LED, IR7_LED, IR8_LED};
 #define ON_LED    11
 
 // TIM4
 #define N 1
 #define WAIT_PSC 1000
 #define WAIT_DELAY (N*APB1_CLK)/WAIT_PSC
-
 int PERIOD = WAIT_DELAY;
 int _maxValue = 4000;
 
@@ -46,53 +46,24 @@ void wait_seconds(float seconds) {
 }
 
 void init_gpiod_out(void) {
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR1_LED * 2, 2, GPIO_MODER_OUT);
-    GPIOD_OTYPER &= ~(1 << IR1_LED);
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR2_LED * 2, 2, GPIO_MODER_OUT);
-    GPIOD_OTYPER &= ~(1 << IR2_LED);
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR3_LED * 2, 2, GPIO_MODER_OUT);
-    GPIOD_OTYPER &= ~(1 << IR3_LED);
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR4_LED * 2, 2, GPIO_MODER_OUT);
-    GPIOD_OTYPER &= ~(1 << IR4_LED);
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR5_LED * 2, 2, GPIO_MODER_OUT);
-    GPIOD_OTYPER &= ~(1 << IR5_LED);
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR6_LED * 2, 2, GPIO_MODER_OUT);
-    GPIOD_OTYPER &= ~(1 << IR6_LED);
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR7_LED * 2, 2, GPIO_MODER_OUT);
-    GPIOD_OTYPER &= ~(1 << IR7_LED);
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR8_LED * 2, 2, GPIO_MODER_OUT);
-    GPIOD_OTYPER &= ~(1 << IR8_LED);
+    for (int i = 0; i < NB_QTR_SENSORS; i++) {
+        GPIOD_MODER = REP_BITS(GPIOD_MODER, IR_LEDS[i] * 2, 2, GPIO_MODER_OUT);
+        GPIOD_OTYPER &= ~(1 << IR_LEDS[i]);
+    }
 }
 
 void init_gpiod_in(void) {
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR1_LED * 2, 2, GPIO_MODER_IN);
-    GPIOD_OTYPER &= ~(1 << IR1_LED);
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR2_LED * 2, 2, GPIO_MODER_IN);
-    GPIOD_OTYPER &= ~(1 << IR2_LED);
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR3_LED * 2, 2, GPIO_MODER_IN);
-    GPIOD_OTYPER &= ~(1 << IR3_LED);
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR4_LED * 2, 2, GPIO_MODER_IN);
-    GPIOD_OTYPER &= ~(1 << IR4_LED);
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR5_LED * 2, 2, GPIO_MODER_IN);
-    GPIOD_OTYPER &= ~(1 << IR5_LED);
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR6_LED * 2, 2, GPIO_MODER_IN);
-    GPIOD_OTYPER &= ~(1 << IR6_LED);
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR7_LED * 2, 2, GPIO_MODER_IN);
-    GPIOD_OTYPER &= ~(1 << IR7_LED);
-    GPIOD_MODER = REP_BITS(GPIOD_MODER, IR8_LED * 2, 2, GPIO_MODER_IN);
-    GPIOD_OTYPER &= ~(1 << IR8_LED);
+    for (int i = 0; i < NB_QTR_SENSORS; i++) {
+        GPIOD_MODER = REP_BITS(GPIOD_MODER, IR_LEDS[i] * 2, 2, GPIO_MODER_IN);
+        GPIOD_OTYPER &= ~(1 << IR_LEDS[i]);
+    }
 }
 
 
 void gpiod_drive_high(void) { // make sensor line an output and drive high
-    GPIOD_ODR |= 1 << IR1_LED;
-    GPIOD_ODR |= 1 << IR2_LED;
-    GPIOD_ODR |= 1 << IR3_LED;
-    GPIOD_ODR |= 1 << IR4_LED;
-    GPIOD_ODR |= 1 << IR5_LED;
-    GPIOD_ODR |= 1 << IR6_LED;
-    GPIOD_ODR |= 1 << IR7_LED;
-    GPIOD_ODR |= 1 << IR8_LED;
+    for (int i = 0; i < NB_QTR_SENSORS; i++) {
+        GPIOD_ODR |= 1 << IR_LEDS[i];
+    }
 }
 
 void init_gpio_qtr8rc() {
@@ -112,43 +83,26 @@ void init_tim4_qtr8rc(){
 	TIM4_CR1 = TIM_CEN;
 }
 
-void compute_time(int *sensor_values, uint32_t elapsed_time) {
-    for (unsigned int led = 1; led <= NB_QTR_SENSORS; led++) {
-        int tmp;
-        if (led == 1)
-            tmp = IR1_LED;
-        else if (led == 2)
-            tmp = IR2_LED;
-        else 
-            tmp = led;
-        
-        if (((GPIOD_IDR & (1 << tmp)) == 0) && (elapsed_time < sensor_values[led-1])){
-            sensor_values[led-1] = elapsed_time;
+void compute_time(int *sensorValues, uint32_t elapsedTime) {
+    for (unsigned int i = 0; i < NB_QTR_SENSORS; i++) {
+        if (((GPIOD_IDR & (1 << IR_LEDS[i])) == 0) && (elapsedTime < sensorValues[i])){
+            sensorValues[i] = elapsedTime;
         }
     }
 }
 
-int compute_position(int *sensor_values) {
+int compute_position(int *sensorValues) {
     int sum = 0;
     for (int i = 0; i < NB_QTR_SENSORS; i++) {
-        sum += sensor_values[i];
+        sum += sensorValues[i];
     }
     int rsl = 0;
     int c = 0;
     for (int i = 0; i < NB_QTR_SENSORS; i++) {
-        rsl += sensor_values[i] * c;
+        rsl += sensorValues[i] * c;
         c += 1000;
     }
     return rsl/sum;
-}
-
-void calibrate_time(int *sensor_values) {
-    for (int i = 0; i < NB_QTR_SENSORS; i++) {
-        if (sensor_values[i] <= 20)
-            sensor_values[i] = 0;
-        else
-            sensor_values[i] = 1;
-    }
 }
 
 void qtr8rc_init(void) {
@@ -157,30 +111,37 @@ void qtr8rc_init(void) {
 }
 
 void qtr8rc_read(int* position) {
+    int sensorValues[NB_QTR_SENSORS] = {_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue};
     GPIOD_BSRR |= 1 << ON_LED;
-    int sensor_values[NB_QTR_SENSORS] = {_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue};
+
     TIM4_CNT = 0;
     TIM4_SR = 0;
     TIM4_CR1 = TIM_CEN;
 
-    uint32_t elapsed_time = 0;
     init_gpiod_out();
     gpiod_drive_high();
 
     wait_seconds(0.00001);
 
     init_gpiod_in();
-    uint32_t start_time = TIM4_CNT;
-    elapsed_time = TIM4_CNT - start_time;
-    while (elapsed_time < _maxValue) { 
-    // Calcule le temps écoulé à chaque itération
-        elapsed_time = TIM4_CNT - start_time;
-        compute_time(sensor_values, elapsed_time);
-        // printf("-> %d\n", elapsed_time);
+    
+    uint32_t startTime = TIM4_CNT;
+    uint32_t elapsedTime = 0;
+    while (elapsedTime < _maxValue) { 
+        // Calcule le temps écoulé à chaque itération
+        elapsedTime = TIM4_CNT - startTime;
+        // printf("ela:%d\n", elapsedTime);
+        compute_time(sensorValues, elapsedTime);
     }
+    printf("sortie\n");
     TIM4_CR1 &= ~TIM_CEN;  // Disable the timer
+    
+    for (int i = 0; i < NB_QTR_SENSORS; i++) {
+        printf("C%d:%d, ", i+1, sensorValues[i]);
+    }
+    printf("\n");
 
-    //calibrate_time(sensor_values);
+    //calibrate_time(sensorValues);
     GPIOD_BSRR |= 1 << (ON_LED + 16);
-    *position = compute_position(sensor_values);
+    *position = compute_position(sensorValues);
 }
