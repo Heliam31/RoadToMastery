@@ -58,9 +58,10 @@ void delay_ms(uint32_t ms) {
 }
 
 static inline void __i2c_start() {
-
+    uint32_t reg;
     I2C1_CR1 |= I2C_CR1_START;
     while(!(I2C1_SR1 & I2C_SR1_SB));
+    reg = I2C1_SR1;
 }
 
 static inline void __i2c_stop() {
@@ -72,11 +73,13 @@ void i2c_write(uint8_t regaddr, uint8_t data) {
     // send start condition
     printf("avant start\n");
     __i2c_start();
-    printf("started\n");
+    
     // send chipaddr in write mode
     // wait until address is sent
     I2C1_DR = DeviceAddr;
-    while (!(I2C1_SR1 & I2C_SR1_ADDR));
+
+    while (!(I2C1_SR1 & I2C_SR1_ADDR)){ 
+    printf("%d\n", I2C1_SR1);};
     // dummy read to clear flags
     (void)I2C1_SR2; // clear addr condition
     printf("sorti while1\n");
@@ -99,7 +102,6 @@ uint8_t i2c_read(uint8_t regaddr) {
 
     // send start condition
     __i2c_start();
-
     // send chipaddr in write mode
     // wait until address is sent
     I2C1_DR = DeviceAddr;
@@ -148,7 +150,7 @@ void I2C1_ER_IRQHandler(){
     }
     (void)I2C1_SR1;
     (void)I2C1_SR2;
-    delay_ms(500);
+    //delay_ms(500);
     printf("sorti delay");
     GPIOD_BSRR = (1 << (16+14)); 
 }
@@ -203,8 +205,8 @@ int main(void)
     // reset and clear reg
     //I2C1_CR2 = 42;
 
-    // I2C1_CR1 |= I2C_CR1_SWRST;
-    // I2C1_CR1 &= ~I2C_CR1_SWRST;
+    I2C1_CR1 |= I2C_CR1_SWRST;
+    I2C1_CR1 = 0;
 
     // I2C1_CR2 |= (I2C_CR2_ITERREN); // enable error interrupt
 
@@ -213,7 +215,7 @@ int main(void)
 
     // I2C1_TRISE |= (11 << 0); // program TRISE to 11 for 100khz
 
-    I2C1_OAR1 |= (0x00 << 1);
+    //I2C1_OAR1 |= (0x00 << 1);
     I2C1_OAR1 |= (1 << 14); // bit 14 should be kept at 1 according to the datasheet
     // I2C1_CR2 |= 0x30;
     // I2C1_CCR = 0x8028;
@@ -223,7 +225,7 @@ int main(void)
     init_NVIC();
 
     I2C1_CR1 |=I2C_CR1_PE; // enable i2c
-
+    
     while(1)
     {
         i2c_write(DeviceAddr, 4);
