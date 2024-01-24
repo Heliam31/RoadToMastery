@@ -24,18 +24,15 @@
 #define IR8_LED    7
 #define ON_LED    11
 
-// static const int leds[] = {IR_LED}
-
 // TIM4
 #define N 1
-#define WAIT_PSC 	1000
-#define WAIT_DELAY	(N*APB1_CLK)/WAIT_PSC
+#define WAIT_PSC 1000
+#define WAIT_DELAY (N*APB1_CLK)/WAIT_PSC
 
 int PERIOD = WAIT_DELAY;
-int _maxValue = 2500;
+int _maxValue = 4000;
 
 // GLOBAL
-// int sensor_read = 0x00000000;
 int actives = 0;
 int position;
 

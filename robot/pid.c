@@ -4,7 +4,7 @@
 #include "pid.h"
 
 
-#define Kp 1.2 //set up the constants value
+#define Kp 0.4 //set up the constants value
 #define Ki 0
 #define Kd 0
 #define REFERENCE 4100
@@ -66,6 +66,8 @@ int calculate_pid(const int position, const int error) {
 void calculate_motor_speed(int *motorLeftSpeed, int *motorRightSpeed, const int position) {
     int error = REFERENCE - position;
     int motorSpeed = calculate_pid(position, error);
+
+    printf("motorSpeed:%d\n", motorSpeed);
 
     *motorLeftSpeed = (baseSpeedLeft + motorSpeed);
     *motorRightSpeed = (baseSpeedRight - motorSpeed);
