@@ -32,7 +32,7 @@
 #define WAIT_DELAY	(N*APB1_CLK)/WAIT_PSC
 
 int PERIOD = WAIT_DELAY;
-int _maxValue = 4046;
+int _maxValue = 2500;
 
 // GLOBAL
 // int sensor_read = 0x00000000;

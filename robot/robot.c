@@ -7,6 +7,7 @@
 #include <stm32f4/tim.h>
 #include <stm32f4/adc.h>
 
+#include "pid.h"
 #include "qtr8rc.h"
 #include "motor_driver.h"
 
@@ -17,29 +18,6 @@
 #define N 0.1
 #define PSC 128 // ->1s  // 8->0.01s
 #define PERIOD N*(APB1_CLK)/PSC
-
-
-// PID
-// float Kp = 0.002; //set up the constants value
-// float Ki = 0.001;
-// float Kd = 15;
-// float Kr = 0;
-
-int Kp = 1;
-int Ki = 0;
-int Kd = 0;
-
-int P, I, D;
-int lastError = 0;
-int errors[10] = {0,0,0,0,0,0,0,0,0,0};
-int errorSum = 0;
-int lastEnd = 0;	// 0 -> Left, 1 -> Right 
-int lastIdle = 0;
-const int maxSpeedRight = 10;
-const int maxSpeedLeft = 10;
-const int baseSpeedRight = 9;
-const int baseSpeedLeft = 9;
-
 
 void init_timer_sync(void) {
     TIM3_CR1 = 0;
@@ -58,7 +36,6 @@ void init_gpio_led(void) {
 void init(void) {
     init_timer_sync();
     init_gpio_led();
-
     qtr8rc_init();
     motor_init();
 }
@@ -67,73 +44,6 @@ void sync(void) {
     while(((TIM3_SR & TIM_UIF) == 0)) NOP;
 	TIM3_SR &= ~TIM_UIF;
     return;
-}
-
-int errors_sum(int index, int abs) {
-    int sum = 0;
-    for (int i = 0; i < index; i++) {
-    if ((abs == 1) && (errors[i] < 0)) 
-        sum += -errors[i];
-    else
-        sum += errors[i];
-    }
-    return sum;
-}
-
-void save_error(int error) {
-    // save error
-    errors[9] = errors[8];
-    errors[8] = errors[7];
-    errors[7] = errors[6];
-    errors[6] = errors[5];
-    errors[5] = errors[4];
-    errors[4] = errors[3];
-    errors[3] = errors[2];
-    errors[2] = errors[1];
-    errors[1] = errors[0];
-    errors[0] = error;
-}
-
-int abs(int x) {
-    return x < 0 ? -x : x;
-}
-
-int min(int x, int y) {
-    return x < y ? x : y;
-}
-
-int max(int x, int y) {
-    return x < y ? y : x;
-}
-
-void compute_pid(int *position, int *motorLeftSpeed, int *motorRightSpeed) {
-    int error = 4100 - *position;
-
-    //printf("error = %d \n", error);
-
-    save_error(error);
-
-    P = error;
-    I = errors_sum(5, 1);
-    D = error - lastError;
-    lastError = error;
-
-    int motorSpeed = (P*Kp + I*Ki + D*Kd);
-    
-    printf("motorSpeed:%d\n", motorSpeed);
-
-    *motorLeftSpeed = (baseSpeedLeft + motorSpeed)/100;
-    *motorRightSpeed = (baseSpeedRight - motorSpeed)/100;
-
-    printf("l = %d\n", *motorLeftSpeed);
-    printf("r = %d\n", *motorRightSpeed);
-
-
-    *motorLeftSpeed = max(-1, min(*motorLeftSpeed, maxSpeedLeft));
-    *motorRightSpeed = max(-1, min(*motorRightSpeed, maxSpeedRight));
-
-    *motorLeftSpeed = *motorLeftSpeed + maxSpeedLeft - (abs(error)/1000)*maxSpeedLeft;
-    *motorRightSpeed = *motorRightSpeed + maxSpeedRight - (abs(error)/1000)*maxSpeedRight;
 }
 
 void allumer_led(void) {
@@ -161,20 +71,11 @@ int main(void) {
     while(1){
         qtr8rc_read(&position);
         printf("pos:%d\n", position);
-        // allumer_led();
 
-        // sync();
-
-        double i = 1.5;
-        double t = i - i;
-
-        compute_pid(&position, &motorLeftSpeed, &motorRightSpeed);
+        calculate_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
         printf("motorLeft = %d\n", motorLeftSpeed);
         printf("motorRight = %d\n", motorRightSpeed);
 
-        // sync();
-        
         motor_set_speeds(motorLeftSpeed, motorRightSpeed);
-        // eteindre_led();
     }
 }
