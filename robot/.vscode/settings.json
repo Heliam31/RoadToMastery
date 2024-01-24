@@ -1,6 +1,0 @@
-{
-    "files.associations": {
-        "cstdint": "c",
-        "motor_driver.h": "c"
-    }
-}

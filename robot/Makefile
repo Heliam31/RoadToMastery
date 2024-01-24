@@ -24,13 +24,13 @@ CFLAGS += \
 	-mcpu=cortex-m4 \
 	-mfpu=fpv4-sp-d16 \
 	-I $(STM32_ROOT)/include \
-	-g3 \
-	-u_printf_float
+	-g3 
 
 LDFLAGS = \
 	-static \
 	-nostdinc -nostdlib \
-	-nostartfiles
+	-nostartfiles \
+	-lgcc
 
 ADD_OBJECTS = \
 	$(STM32_ROOT)/lib/startup.o \
