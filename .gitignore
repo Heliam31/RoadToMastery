@@ -1,4 +1,12 @@
+
 robot/*.o
 robot/*.elf
+robot/*.log
 robot/.vscode
+
+robot/tmp/*.o
+robot/tmp/*.elf
+robot/tmp/*.log
+robot/tmp/.vscode
+
 .vscode
