@@ -30,6 +30,8 @@
 
 //I2C_SR1
 #define I2C_SR1_ADDR    (1 << 1)
+#define I2C_SR1_BERR    (1 << 8)
+#define I2C_SR1_AF      (1 << 10)
 #define I2C_SR1_BTF     (1 << 2)
 #define I2C_SR1_RXNE    (1 << 6)
 #define I2C_SR1_SB      (1 << 0)

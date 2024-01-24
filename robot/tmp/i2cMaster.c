@@ -26,7 +26,7 @@
 #define REGID  0x01
 #define CHIPID 0x1C // first 5 bits of reg
 
-volatile uint8_t DeviceAddr = ADDRESS;
+volatile uint8_t DeviceAddr = 1;
 
 /*************************************************
 * function declarations
@@ -50,7 +50,7 @@ void i2c_write(uint8_t regaddr, uint8_t data) {
     printf("started\n");
     // send chipaddr in write mode
     // wait until address is sent
-    I2C1_DR = DeviceAddr;
+    I2C1_DR = (DeviceAddr<<1) | 0x00;
     while (!(I2C1_SR1 & I2C_SR1_ADDR));
     // dummy read to clear flags
     (void)I2C1_SR2; // clear addr condition
@@ -112,6 +112,17 @@ uint8_t i2c_read(uint8_t regaddr) {
 void I2C1_ER_IRQHandler(){
     // error handler
     GPIOD_BSRR = (1 << 14); // red LED
+    if (I2C1_SR1 & I2C_SR1_BERR) {
+        printf("Bus Error \n");
+    }
+
+    if (I2C1_SR1 & I2C_SR1_AF) {
+        printf("AF \n");
+        // Acknowledge Failure
+        __i2c_stop();
+    }
+    (void)I2C1_SR1;
+    (void)I2C1_SR2;
 }
 
 void init_NVIC(){
@@ -151,19 +162,19 @@ int main(void)
     
     GPIOB_MODER = REP_BITS(GPIOB_MODER, SCL*2, 2, GPIO_MODER_ALT);
     GPIOB_AFRH = REP_BITS(GPIOB_AFRH, 0*4, 4, 4);
-    GPIOB_PUPDR = REP_BITS(GPIOA_PUPDR, SCL*2 , 2, GPIO_PUPDR_PD);
-    GPIOB_OTYPER &= ~(1<<SCL);
+    GPIOB_PUPDR = REP_BITS(GPIOB_PUPDR, SCL*2 , 2, GPIO_PUPDR_PD);
+    GPIOB_OTYPER &= (1<<SCL);
 
     GPIOB_MODER = REP_BITS(GPIOB_MODER, SDA*2, 2, GPIO_MODER_ALT);
     GPIOB_AFRH = REP_BITS(GPIOB_AFRH, 1*4, 4, 4);
-    GPIOB_PUPDR = REP_BITS(GPIOA_PUPDR, SDA*2 , 2, GPIO_PUPDR_PD);
-    GPIOB_OTYPER &= ~(1<<SDA);
+    GPIOB_PUPDR = REP_BITS(GPIOB_PUPDR, SDA*2 , 2, GPIO_PUPDR_PD);
+    GPIOB_OTYPER &= (1<<SDA);
 
     // reset and clear reg
-    I2C1_CR2 = 42;
+    //I2C1_CR2 = 42;
 
-    I2C1_CR1 |= I2C_CR1_SWRST;
-    I2C1_CR1 &= ~I2C_CR1_SWRST;
+    // I2C1_CR1 |= I2C_CR1_SWRST;
+    // I2C1_CR1 &= ~I2C_CR1_SWRST;
 
     I2C1_CR2 |= (I2C_CR2_ITERREN); // enable error interrupt
 
@@ -174,14 +185,14 @@ int main(void)
 
     // // I2C1_OAR1 |= (0x00 << 1);
     I2C1_OAR1 |= (1 << 14); // bit 14 should be kept at 1 according to the datasheet
-    I2C1_CR2 = 0x30;
+    I2C1_CR2 |= 0x30;
     I2C1_CCR = 0x8028;
     I2C1_TRISE = 0xf;
     // enable error interrupt from NVIC
 
     init_NVIC();
 
-    I2C1_CR1 |= I2C_CR1_ACK | I2C_CR1_PE; // enable i2c
+    I2C1_CR1 |=I2C_CR1_PE; // enable i2c
 
     
 
