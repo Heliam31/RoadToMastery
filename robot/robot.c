@@ -53,6 +53,7 @@ void allumer_led(void) {
 void eteindre_led(void) {
     GPIOD_BSRR = 1 << (GREEN_LED + 16);
 }
+
 int main(void) {
 
     RCC_AHB1ENR |= RCC_GPIOAEN;
@@ -62,8 +63,8 @@ int main(void) {
 	RCC_APB1ENR |= RCC_TIM2EN;
     RCC_APB2ENR |= RCC_ADC1EN;
 
-
     init();
+    
     int position = 0;
     int motorLeftSpeed = 0;
     int motorRightSpeed = 0;
