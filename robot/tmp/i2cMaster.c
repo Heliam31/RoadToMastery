@@ -26,11 +26,36 @@
 #define REGID  0x01
 #define CHIPID 0x1C // first 5 bits of reg
 
-volatile uint8_t DeviceAddr = 1;
+volatile uint8_t DeviceAddr = 3;
 
 /*************************************************
 * function declarations
 *************************************************/
+
+void delay_ms(uint32_t ms) {
+    // Set the prescaler value for 1ms ticks
+    TIM2_PSC = APB1_CLK / 1000 - 1;
+
+    // Set the auto-reload value for 1ms
+    TIM2_ARR = 71999;
+
+    // Enable the timer
+    TIM2_CR1 |= TIM_CEN;
+
+    for (uint32_t i = 0; i < ms; ++i) {
+        // Wait until the update event occurs (1ms)
+        while ((TIM2_SR & TIM_UIF)==0) {
+            // Wait
+        }
+        printf("sorti UIF \n");
+        // Clear the update event flag
+        TIM2_ARR = 71999;
+        TIM2_SR = 0;
+    }
+
+    // Disable the timer
+    TIM2_CR1 &= ~TIM_CEN;
+}
 
 static inline void __i2c_start() {
 
@@ -50,7 +75,7 @@ void i2c_write(uint8_t regaddr, uint8_t data) {
     printf("started\n");
     // send chipaddr in write mode
     // wait until address is sent
-    I2C1_DR = (DeviceAddr<<1) | 0x00;
+    I2C1_DR = DeviceAddr;
     while (!(I2C1_SR1 & I2C_SR1_ADDR));
     // dummy read to clear flags
     (void)I2C1_SR2; // clear addr condition
@@ -123,6 +148,9 @@ void I2C1_ER_IRQHandler(){
     }
     (void)I2C1_SR1;
     (void)I2C1_SR2;
+    delay_ms(500);
+    printf("sorti delay");
+    GPIOD_BSRR = (1 << (16+14)); 
 }
 
 void init_NVIC(){
@@ -141,6 +169,7 @@ void init_NVIC(){
 
 	//start
 	ENABLE_IRQS;
+
 }
 
 /*************************************************
@@ -150,6 +179,7 @@ int main(void)
 {
     /* set system clock to 168 Mhz */
 
+    RCC_APB1ENR |= RCC_TIM2EN;
     RCC_AHB1ENR |= RCC_GPIODEN;
     RCC_AHB1ENR |= RCC_GPIOBEN;
     RCC_APB1ENR |= RCC_I2C1EN;
@@ -162,12 +192,12 @@ int main(void)
     
     GPIOB_MODER = REP_BITS(GPIOB_MODER, SCL*2, 2, GPIO_MODER_ALT);
     GPIOB_AFRH = REP_BITS(GPIOB_AFRH, 0*4, 4, 4);
-    GPIOB_PUPDR = REP_BITS(GPIOB_PUPDR, SCL*2 , 2, GPIO_PUPDR_PD);
+    // GPIOB_PUPDR = REP_BITS(GPIOB_PUPDR, SCL*2 , 2, GPIO_PUPDR_PD);
     GPIOB_OTYPER &= (1<<SCL);
 
     GPIOB_MODER = REP_BITS(GPIOB_MODER, SDA*2, 2, GPIO_MODER_ALT);
     GPIOB_AFRH = REP_BITS(GPIOB_AFRH, 1*4, 4, 4);
-    GPIOB_PUPDR = REP_BITS(GPIOB_PUPDR, SDA*2 , 2, GPIO_PUPDR_PD);
+    // GPIOB_PUPDR = REP_BITS(GPIOB_PUPDR, SDA*2 , 2, GPIO_PUPDR_PD);
     GPIOB_OTYPER &= (1<<SDA);
 
     // reset and clear reg
@@ -176,30 +206,28 @@ int main(void)
     // I2C1_CR1 |= I2C_CR1_SWRST;
     // I2C1_CR1 &= ~I2C_CR1_SWRST;
 
-    I2C1_CR2 |= (I2C_CR2_ITERREN); // enable error interrupt
+    // I2C1_CR2 |= (I2C_CR2_ITERREN); // enable error interrupt
 
-    // I2C1_CR2 |= (10 << 0); // 10Mhz periph clock
-    // I2C1_CCR |= (50 << 0);
+    I2C1_CR2 |= (10 << 0); // 10Mhz periph clock
+    I2C1_CCR |= (50 << 0);
 
     // I2C1_TRISE |= (11 << 0); // program TRISE to 11 for 100khz
 
-    // // I2C1_OAR1 |= (0x00 << 1);
+    I2C1_OAR1 |= (0x00 << 1);
     I2C1_OAR1 |= (1 << 14); // bit 14 should be kept at 1 according to the datasheet
-    I2C1_CR2 |= 0x30;
-    I2C1_CCR = 0x8028;
-    I2C1_TRISE = 0xf;
+    // I2C1_CR2 |= 0x30;
+    // I2C1_CCR = 0x8028;
+    I2C1_TRISE = (11<<0);
     // enable error interrupt from NVIC
 
     init_NVIC();
 
     I2C1_CR1 |=I2C_CR1_PE; // enable i2c
 
-    
-
     while(1)
     {
+        i2c_write(DeviceAddr, 4);
         GPIOD_BSRR = (1 << 13); // orange led on error
-        i2c_write(DeviceAddr, 134569);
     }
     return 0;
 }
