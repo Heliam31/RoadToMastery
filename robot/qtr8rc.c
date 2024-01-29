@@ -112,7 +112,6 @@ void qtr8rc_init(void) {
 
 void qtr8rc_read(int* position) {
     int sensorValues[NB_QTR_SENSORS] = {_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue};
-    GPIOD_BSRR |= 1 << ON_LED;
 
     TIM4_CNT = 0;
     TIM4_SR = 0;
@@ -130,18 +129,15 @@ void qtr8rc_read(int* position) {
     while (elapsedTime < _maxValue) { 
         // Calcule le temps écoulé à chaque itération
         elapsedTime = TIM4_CNT - startTime;
-        // printf("ela:%d\n", elapsedTime);
         compute_time(sensorValues, elapsedTime);
     }
-    printf("sortie\n");
     TIM4_CR1 &= ~TIM_CEN;  // Disable the timer
     
-    for (int i = 0; i < NB_QTR_SENSORS; i++) {
-        printf("C%d:%d, ", i+1, sensorValues[i]);
-    }
-    printf("\n");
+    // for (int i = 0; i < NB_QTR_SENSORS; i++) {
+    //     printf("C%d:%d, ", i+1, sensorValues[i]);
+    // }
+    // printf("\n");
 
     //calibrate_time(sensorValues);
-    GPIOD_BSRR |= 1 << (ON_LED + 16);
     *position = compute_position(sensorValues);
 }

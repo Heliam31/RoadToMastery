@@ -9,7 +9,8 @@
 
 #include "pid.h"
 #include "qtr8rc.h"
-#include "motor_driver.h"
+// #include "motor_driver.h"
+#include "l298nDCMotor.h"
 
 // DEBUG LED (GPIOD)
 #define GREEN_LED 12
@@ -77,6 +78,9 @@ int main(void) {
         printf("motorLeft = %d\n", motorLeftSpeed);
         printf("motorRight = %d\n", motorRightSpeed);
 
-        motor_set_speeds(motorLeftSpeed, motorRightSpeed);
+        // motor_set_speeds(motorLeftSpeed, motorRightSpeed);
+        // l298nDCMoto_set_speed(motorLeftSpeed, motorRightSpeed);
+        l298nDCMoto_set_speed(10,10);
+        printf("\n");
     }
 }

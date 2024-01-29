@@ -2,12 +2,13 @@
 #include <tinyprintf.h>
 
 #include "pid.h"
+#include "utils.h"
 
 
 #define Kp 0.4 //set up the constants value
 #define Ki 0
 #define Kd 0
-#define REFERENCE 4100
+#define REFERENCE 3450
 
 int errors[10] = {0,0,0,0,0,0,0,0,0,0};
 int errorPrec = 0;
@@ -16,18 +17,6 @@ const int maxSpeedRight = 10;
 const int maxSpeedLeft = 10;
 const int baseSpeedRight = 9;
 const int baseSpeedLeft = 9;
-
-int abs(int x) {
-    return x < 0 ? -x : x;
-}
-
-int min(int x, int y) {
-    return x < y ? x : y;
-}
-
-int max(int x, int y) {
-    return x < y ? y : x;
-}
 
 int errors_sum(int index, int abs) {
     int sum = 0;
@@ -67,13 +56,8 @@ void calculate_motor_speed(int *motorLeftSpeed, int *motorRightSpeed, const int 
     int error = REFERENCE - position;
     int motorSpeed = calculate_pid(position, error);
 
-    printf("motorSpeed:%d\n", motorSpeed);
-
     *motorLeftSpeed = (baseSpeedLeft + motorSpeed);
     *motorRightSpeed = (baseSpeedRight - motorSpeed);
-
-    printf("l = %d\n", *motorLeftSpeed);
-    printf("r = %d\n", *motorRightSpeed);
 
     *motorLeftSpeed = max(-1, min(*motorLeftSpeed, maxSpeedLeft));
     *motorRightSpeed = max(-1, min(*motorRightSpeed, maxSpeedRight));
