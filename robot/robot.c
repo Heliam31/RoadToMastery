@@ -9,7 +9,7 @@
 
 #include "pid.h"
 #include "qtr8rc.h"
-// #include "motor_driver.h"
+//#include "motor_driver.h"
 #include "l298nDCMotor.h"
 
 // DEBUG LED (GPIOD)
@@ -18,7 +18,7 @@
 // TIMER POUR SYNC
 #define N 0.1
 #define PSC 128 // ->1s  // 8->0.01s
-#define PERIOD N*(APB1_CLK)/PSC
+#define PERIOD (N*APB1_CLK)/PSC
 
 void init_timer_sync(void) {
     TIM2_CR1 = 0;
@@ -38,11 +38,12 @@ void init(void) {
     init_timer_sync();
     init_gpio_led();
     qtr8rc_init();
-    motor_init();
+    // motor_init();
+    l298nDCMotor_init();
 }
 
 void sync(void) {
-    while(((TIM2_SR & TIM_UIF) == 0)) NOP;
+    while(((TIM3_SR & TIM_UIF) == 0)) NOP;
 	TIM2_SR &= ~TIM_UIF;
     return;
 }
@@ -81,9 +82,9 @@ int main(void) {
         // printf("motorLeft = %d\n", motorLeftSpeed);
         // printf("motorRight = %d\n", motorRightSpeed);
 
-        motor_set_speeds(motorLeftSpeed, motorRightSpeed);
-        // l298nDCMoto_set_speed(motorLeftSpeed, motorRightSpeed);
-        l298nDCMoto_set_speed(10,10);
-        printf("\n");
+        // motor_set_speeds(25,25);
+        //l298nDCMoto_set_speed(motorLeftSpeed, motorRightSpeed);
+        l298nDCMoto_set_speed(25,25);
+        // printf("\n");
     }
 }

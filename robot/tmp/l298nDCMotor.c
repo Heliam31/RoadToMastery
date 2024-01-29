@@ -10,63 +10,62 @@
 
 // GPIOA pins 0,1,2,3,4,5 are connected to L298N module
 // Motor A
-#define enA 0
-#define in1 1
-#define in2 2
+#define enA 6
+#define in1 0
+#define in2 1
 // Motor B
-#define enB 3
-#define in3 6
-#define in4 7
+#define enB 7
+#define in3 2
+#define in4 3
 
 // PWM frequency is 1kHz
 #define N 1
-#define PSC 6000
+#define PSC 1000
 #define PERIOD (N*AHB_CLK/PSC)
 
 void init_gpioa(void) {
     // Set GPIOA pins 0,1,2,3,6,7 to output
-    GPIOA_MODER = REP_BITS(GPIOA_MODER, enA*2,2,GPIO_MODER_ALT);
+    GPIOC_MODER = REP_BITS(GPIOC_MODER, enA*2,2,GPIO_MODER_ALT);
     GPIOA_MODER = REP_BITS(GPIOA_MODER, in1*2,2,GPIO_MODER_OUT);
     GPIOA_MODER = REP_BITS(GPIOA_MODER, in2*2,2,GPIO_MODER_OUT);
-    
-    GPIOA_MODER = REP_BITS(GPIOA_MODER, enB*2,2,GPIO_MODER_ALT);
+
+    GPIOC_MODER = REP_BITS(GPIOC_MODER, enB*2,2,GPIO_MODER_ALT);
     GPIOA_MODER = REP_BITS(GPIOA_MODER, in3*2,2,GPIO_MODER_OUT);
     GPIOA_MODER = REP_BITS(GPIOA_MODER, in4*2,2,GPIO_MODER_OUT);
 
-    GPIOA_AFRL = REP_BITS(GPIOA_AFRL, enA*4, 4, 1);
+    GPIOC_AFRL = REP_BITS(GPIOC_AFRL, enA*4, 4, 2);
     GPIOA_OTYPER &= ~(1<<in1); 
     GPIOA_OTYPER &= ~(1<<in2); 
-    GPIOA_AFRL = REP_BITS(GPIOA_AFRL, enB*4, 4, 1);
+    GPIOC_AFRL = REP_BITS(GPIOC_AFRL, enB*4, 4, 2);
     GPIOA_OTYPER &= ~(1<<in3); 
     GPIOA_OTYPER &= ~(1<<in4); 
 }
 
-void init_timer2(void) {
-    // Initialize TIM2 clock
-    TIM2_CR1 = 0;
-    TIM2_PSC = PSC - 1;
-    TIM2_ARR = PERIOD;
+void init_timer3(void) {
+    // Initialize TIM3 clock
+    TIM3_CR1 = 0;
+    TIM3_PSC = PSC - 1;
+    TIM3_ARR = PERIOD;
 
-    // Set TIM2 capture/compare
-    TIM2_CCR1 = 0;
-    TIM2_CCR2 = 0;
-    TIM2_CCMR1 = TIM_OC2M_PWM1;
-    TIM2_CCMR2 = TIM_OC2M_PWM1;
+    // Set TIM3 capture/compare
+    TIM3_CCMR1 = TIM_OC2M_PWM1 | TIM_CCS1S_OUT | TIM_OC1PE;
+    TIM3_CCMR2 = TIM_OC2M_PWM1 | TIM_CCS2S_OUT | TIM_OC1PE;
+    TIM3_CCR1 = 0;
+    TIM3_CCR2 = 0;
+    // Set TIM3 capture/compare enable register
+    TIM3_CCER = TIM_CC1E | TIM_CC2E;
 
-    // Set TIM2 capture/compare enable register
-    TIM2_CCER = TIM_CC1E | TIM_CC2E;
-
-    // Set TIM2 event generation register
+    // Set TIM3 event generation register
 	TIM3_EGR = TIM_UG;
 
-    // Set TIM2 counter enable
-    TIM2_CR1 = TIM_CEN | TIM_ARPE;
-    TIM2_SR = 0;
+    // Set TIM3 counter enable
+    TIM3_CR1 = TIM_CEN | TIM_ARPE;
+    TIM3_SR = 0;
 }
 
 void l298nDCMotor_init(void) {
     init_gpioa();
-    init_timer2();
+    init_timer3();
 }
 
 void l298nDCMoto_set_speed(const int speedA, const int speedB) {
@@ -91,6 +90,6 @@ void l298nDCMoto_set_speed(const int speedA, const int speedB) {
         GPIOA_BSRR = (1 << (in4 + 16));
     }
 
-    TIM2_CCR1 = abs(speedA)*PERIOD/1000;
-    TIM2_CCR2 = abs(speedB)*PERIOD/1000;
+    TIM3_CCR1 = abs(speedA)*PERIOD/100;
+    TIM3_CCR2 = abs(speedB)*PERIOD/100;
 }
