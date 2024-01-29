@@ -5,10 +5,13 @@
 #include "utils.h"
 
 
-#define Kp 0.4 //set up the constants value
+#define Kp 0.04 //set up the constants value
 #define Ki 0
 #define Kd 0
-#define REFERENCE 3450
+#define REFERENCE 3470
+
+#define LEFT_MOTOR_OFFSET 0
+#define RIGHT_MOTOR_OFFSET 0
 
 int errors[10] = {0,0,0,0,0,0,0,0,0,0};
 int errorPrec = 0;
@@ -62,7 +65,9 @@ void calculate_motor_speed(int *motorLeftSpeed, int *motorRightSpeed, const int 
     *motorLeftSpeed = max(-1, min(*motorLeftSpeed, maxSpeedLeft));
     *motorRightSpeed = max(-1, min(*motorRightSpeed, maxSpeedRight));
 
-    *motorLeftSpeed = *motorLeftSpeed + maxSpeedLeft - (abs(error)/1000)*maxSpeedLeft;
-    *motorRightSpeed = *motorRightSpeed + maxSpeedRight - (abs(error)/1000)*maxSpeedRight;
+    *motorLeftSpeed = *motorLeftSpeed + maxSpeedLeft - (abs(error)/1000)*maxSpeedLeft + LEFT_MOTOR_OFFSET;
+    *motorRightSpeed = *motorRightSpeed + maxSpeedRight - (abs(error)/1000)*maxSpeedRight + RIGHT_MOTOR_OFFSET;
+
+    printf("%d: %d,%d \n",position, *motorLeftSpeed, *motorRightSpeed);
 }
 

@@ -69,18 +69,17 @@ int main(void) {
     init();
     
     int position = 0;
-    int motorLeftSpeed = 25;
-    int motorRightSpeed = 25;
+    int motorLeftSpeed = 0;
+    int motorRightSpeed = 0;
 
     while(1){
-        // qtr8rc_read(&position);
+        qtr8rc_read(&position);
         // printf("pos:%d\n", position);
 
-        // calculate_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
+        calculate_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
         // printf("motorLeft = %d\n", motorLeftSpeed);
         // printf("motorRight = %d\n", motorRightSpeed);
 
-        // motor_set_speeds(100, 0);
         set_speed_left(motorLeftSpeed);
         set_speed_right(motorRightSpeed);
     }
