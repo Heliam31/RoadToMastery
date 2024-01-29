@@ -21,12 +21,12 @@
 #define PERIOD N*(APB1_CLK)/PSC
 
 void init_timer_sync(void) {
-    TIM3_CR1 = 0;
-	TIM3_PSC = PSC-1;
-	TIM3_ARR = PERIOD;
-	TIM3_EGR = TIM_UG;
-	TIM3_CR1 |= TIM_CEN | TIM_ARPE;
-	TIM3_SR = 0;
+    TIM2_CR1 = 0;
+	TIM2_PSC = PSC-1;
+	TIM2_ARR = PERIOD;
+	TIM2_EGR = TIM_UG;
+	TIM2_CR1 |= TIM_CEN | TIM_ARPE;
+	TIM2_SR = 0;
 }
 
 void init_gpio_led(void) {
@@ -42,8 +42,8 @@ void init(void) {
 }
 
 void sync(void) {
-    while(((TIM3_SR & TIM_UIF) == 0)) NOP;
-	TIM3_SR &= ~TIM_UIF;
+    while(((TIM2_SR & TIM_UIF) == 0)) NOP;
+	TIM2_SR &= ~TIM_UIF;
     return;
 }
 
@@ -59,9 +59,12 @@ int main(void) {
 
     RCC_AHB1ENR |= RCC_GPIOAEN;
 	RCC_AHB1ENR |= RCC_GPIODEN;
+	RCC_AHB1ENR |= RCC_GPIOCEN;
+
     RCC_APB1ENR |= RCC_TIM4EN;
 	RCC_APB1ENR |= RCC_TIM3EN;
 	RCC_APB1ENR |= RCC_TIM2EN;
+
     RCC_APB2ENR |= RCC_ADC1EN;
 
     init();
@@ -71,14 +74,14 @@ int main(void) {
     int motorRightSpeed = 0;
 
     while(1){
-        qtr8rc_read(&position);
-        printf("pos:%d\n", position);
+        // qtr8rc_read(&position);
+        // printf("pos:%d\n", position);
 
-        calculate_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
-        printf("motorLeft = %d\n", motorLeftSpeed);
-        printf("motorRight = %d\n", motorRightSpeed);
+        // calculate_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
+        // printf("motorLeft = %d\n", motorLeftSpeed);
+        // printf("motorRight = %d\n", motorRightSpeed);
 
-        // motor_set_speeds(motorLeftSpeed, motorRightSpeed);
+        motor_set_speeds(motorLeftSpeed, motorRightSpeed);
         // l298nDCMoto_set_speed(motorLeftSpeed, motorRightSpeed);
         l298nDCMoto_set_speed(10,10);
         printf("\n");
