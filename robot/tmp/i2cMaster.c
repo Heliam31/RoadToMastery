@@ -26,35 +26,21 @@
 #define REGID  0x01
 #define CHIPID 0x1C // first 5 bits of reg
 
-volatile uint8_t DeviceAddr = 0x32;
+volatile uint8_t DeviceAddr = 0x09;
 
 /*************************************************
 * function declarations
 *************************************************/
 
-void delay_ms(uint32_t ms) {
-    // Set the prescaler value for 1ms ticks
-    TIM2_PSC = APB1_CLK / 1000 - 1;
+my_delay_1( void )
+{
+   int i = 72e6/2/4;
 
-    // Set the auto-reload value for 1ms
-    TIM2_ARR = 71999;
-
-    // Enable the timer
-    TIM2_CR1 |= TIM_CEN;
-
-    for (uint32_t i = 0; i < ms; ++i) {
-        // Wait until the update event occurs (1ms)
-        while ((TIM2_SR & TIM_UIF)==0) {
-            // Wait
-        }
-        printf("sorti UIF \n");
-        // Clear the update event flag
-        TIM2_ARR = 71999;
-        TIM2_SR = 0;
-    }
-
-    // Disable the timer
-    TIM2_CR1 &= ~TIM_CEN;
+   while( i > 0 )
+     {
+        i--;
+        __asm__( "nop" );
+     }
 }
 
 static inline void __i2c_start() {
