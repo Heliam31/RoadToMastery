@@ -2,6 +2,10 @@
 #define __QTR8RC_H__
 
 void qtr8rc_init(void);
-void qtr8rc_read(int* position);
+void qtr8rc_read(int *sensorValues);
+void qtr8rc_reset_calibrate(void);
+void qtr8rc_calibrate(void);
+void qtr8rc_read_calibrated(int *position);
+
 
 #endif

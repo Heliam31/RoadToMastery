@@ -5,7 +5,7 @@
 #include "utils.h"
 
 
-#define Kp 0.4 //set up the constants value
+#define Kp 0.003 //set up the constants value
 #define Ki 0
 #define Kd 0
 #define REFERENCE 3450
@@ -64,5 +64,7 @@ void calculate_motor_speed(int *motorLeftSpeed, int *motorRightSpeed, const int 
 
     *motorLeftSpeed = *motorLeftSpeed + maxSpeedLeft - (abs(error)/1000)*maxSpeedLeft;
     *motorRightSpeed = *motorRightSpeed + maxSpeedRight - (abs(error)/1000)*maxSpeedRight;
+
+    printf("%d: %d;%d\n", position, *motorLeftSpeed,*motorRightSpeed);
 }
 
