@@ -26,7 +26,7 @@
 #define REGID  0x01
 #define CHIPID 0x1C // first 5 bits of reg
 
-volatile uint8_t DeviceAddr = 0x54;
+volatile uint8_t DeviceAddr = 0x32;
 
 /*************************************************
 * function declarations
