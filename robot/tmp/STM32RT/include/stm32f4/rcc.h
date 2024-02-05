@@ -95,6 +95,7 @@
 #define RCC_TIM9EN		(1 << 16)
 #define RCC_TIM10EN		(1 << 17)
 #define RCC_TIM11EN		(1 << 18)
+#define RCC_USART1LPEN  (1 << 4)
 
 // AHB1
 #define RCC_GPIOAEN		(1 << 0)
