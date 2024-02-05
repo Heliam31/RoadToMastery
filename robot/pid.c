@@ -8,7 +8,7 @@
 #define Kp 0.003 //set up the constants value
 #define Ki 0
 #define Kd 0
-#define REFERENCE 3450
+#define REFERENCE 3500
 
 int errors[10] = {0,0,0,0,0,0,0,0,0,0};
 int errorPrec = 0;
@@ -53,7 +53,7 @@ int calculate_pid(const int position, const int error) {
 }
 
 void calculate_motor_speed(int *motorLeftSpeed, int *motorRightSpeed, const int position) {
-    int error = REFERENCE - position;
+    int error = position - REFERENCE;
     int motorSpeed = calculate_pid(position, error);
 
     *motorLeftSpeed = (baseSpeedLeft + motorSpeed);

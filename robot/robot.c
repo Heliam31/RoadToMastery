@@ -90,18 +90,23 @@ int main(void) {
         }
     }
 
-    printf("Button pushed\n");
+    printf("Button pushed 1\n");
 
     qtr8rc_calibrate();
 
-    while(1){
-        // qtr8rc_read(&position);
-        // qtr8rc_read_calibrated(&position);
-        // calculate_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
-        // set_speed_left(motorLeftSpeed);
-        // set_speed_right(motorRightSpeed);
+    start = 0;
+    while(!start) {
+        if ((GPIOA_IDR & (1 << BUT)) != 0)  {
+            start = 1;
+        }
+    }
 
-        set_speed_left(0);
-        set_speed_right(0);
+    printf("Button pushed 2\n");
+    printf("Start\n");
+
+    while(1){
+        qtr8rc_read_calibrated(&position);
+        set_speed_left(motorLeftSpeed);
+        set_speed_right(motorRightSpeed);
     }
 }
