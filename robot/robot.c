@@ -10,6 +10,7 @@
 #include "pid.h"
 #include "qtr8rc.h"
 #include "motor_driver.h"
+#include "utils.h"
 
 // DEBUG LED (GPIOD)
 #define GREEN_LED 12
@@ -18,6 +19,16 @@
 #define N 0.1
 #define PSC 128 // ->1s  // 8->0.01s
 #define PERIOD (N*APB1_CLK)/PSC
+
+// UTILS 
+void _robot_delay(int cycles) {
+    for(int i = 0; i < cycles; i++) NOP;
+}
+
+void robot_wait_seconds(float seconds) {
+    int cycles = seconds*APB1_CLK;
+    _robot_delay(cycles);
+}
 
 void init_timer_sync(void) {
     TIM2_CR1 = 0;
@@ -37,8 +48,7 @@ void init(void) {
     init_timer_sync();
     init_gpio_led();
     qtr8rc_init();
-    // motor_init();
-    l298nDCMotor_init();
+    motor_init();
 }
 
 void sync(void) {
@@ -72,14 +82,31 @@ int main(void) {
     int position = 0;
     int motorLeftSpeed = 0;
     int motorRightSpeed = 0;
+    
+    printf("\nCalibrating");
+    set_speed_left(-18);
+    set_speed_right(18);
+
+    // calibration of IR
+    for (size_t i = 0; i < 50; i++)
+    {
+        qtr8rc_calibrate();
+        // printf(".");
+        robot_wait_seconds(0.2);
+    }
+    set_speed_left(0);
+    set_speed_right(0);
+    allumer_led();
+    robot_wait_seconds(1);
+    printf("\nReady !\n");
+    robot_wait_seconds(4);
+    eteindre_led();
 
     while(1){
-        qtr8rc_read(&position);
-        // printf("pos:%d\n", position);
+        // qtr8rc_read(&position);
+        qtr8rc_read_calibrated(&position);
 
         calculate_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
-        // printf("motorLeft = %d\n", motorLeftSpeed);
-        // printf("motorRight = %d\n", motorRightSpeed);
 
         set_speed_left(motorLeftSpeed);
         set_speed_right(motorRightSpeed);

@@ -9,6 +9,7 @@
 #include <stm32f4/adc.h>
 
 #include "motor_driver.h"
+#include "utils.h"
 
 
 // GPIOD
@@ -83,55 +84,58 @@ void init_timer_motor(void){
 	TIM3_CR1 = TIM_CEN;
 }	
 
-void set_forward(void) { // Forward mode
-	// Motor 1
-    GPIOA_BSRR = 1 << (motorPin1);
-    GPIOA_BSRR = 1 << (motorPin2 + 16);
+void _set_forward(int motor) { // Forward mode
 
-	// Motor 2
-    GPIOA_BSRR = 1 << (motorPin3);
-    GPIOA_BSRR = 1 << (motorPin4 + 16);
+	if (!motor){ // Motor 0
+		GPIOA_BSRR = 1 << (motorPin1);
+		GPIOA_BSRR = 1 << (motorPin2 + 16);
+	} else { // Motor 1
+		GPIOA_BSRR = 1 << (motorPin3);
+		GPIOA_BSRR = 1 << (motorPin4 + 16);
+	}
 }
 
-void set_backward(void) { // Backward mode
-	// Motor 1
-    GPIOA_BSRR = 1 << (motorPin1 + 16);
-    GPIOA_BSRR = 1 << (motorPin2);
-
-	// Motor 2
-    GPIOA_BSRR = 1 << (motorPin3 + 16);
-    GPIOA_BSRR = 1 << (motorPin4);
+void _set_backward(int motor) { // Backward mode
+	if (!motor){ // Motor 0
+		GPIOA_BSRR = 1 << (motorPin1 + 16);
+		GPIOA_BSRR = 1 << (motorPin2);
+	} else { // Motor 1
+		GPIOA_BSRR = 1 << (motorPin3 + 16);
+		GPIOA_BSRR = 1 << (motorPin4);
+	}
 }
 
-void motor_disable(void) {
-	// Motor 1
-    GPIOA_BSRR = 1 << (motorPin1 + 16);
-    GPIOA_BSRR = 1 << (motorPin2 + 16);
-
-	// Motor 2
-    GPIOA_BSRR = 1 << (motorPin3 + 16);
-    GPIOA_BSRR = 1 << (motorPin4 + 16);
+void _motor_disable(int motor) {
+	if (!motor){ // Motor 0
+		GPIOA_BSRR = 1 << (motorPin1 + 16);
+		GPIOA_BSRR = 1 << (motorPin2 + 16);
+	} else { // Motor 1
+		GPIOA_BSRR = 1 << (motorPin3 + 16);
+		GPIOA_BSRR = 1 << (motorPin4 + 16);
+	}
 }
 
 void motor_init(void){
     init_gpio_motor();
 	init_timer_motor();
-	set_forward();
+	_set_forward(0);
+	_set_forward(1);
 }
 
 void set_speed_right(int speed) {
 	if (speed < -100 || speed > 100) {
 		printf("ERROR speed not in [-100,100], you may break... something\n");
-		motor_disable();
+		_motor_disable(0);
+		_motor_disable(1);
 		return;
 	}
 
 	if (speed < 0) // backward
-		set_backward();
+		_set_backward(0);
 	else if (speed > 0) // forward
-		set_forward();
+		_set_forward(0);
 	else if (speed == 0)
-		motor_disable();
+		_motor_disable(0);
 
 	TIM3_CCR1 = (abs(speed) * PMOTOR) / 100;
 }
@@ -139,16 +143,17 @@ void set_speed_right(int speed) {
 void set_speed_left(int speed) {
 	if (speed < -100 || speed > 100) {
 		printf("ERROR speed not in [-100,100], you may break... something\n");
-		motor_disable();
+		_motor_disable(0);
+		_motor_disable(1);
 		return;
 	}
 
 	if (speed < 0) // backward
-		set_backward();
+		_set_backward(1);
 	else if (speed > 0) // forward
-		set_forward();
+		_set_forward(1);
 	else if (speed == 0)
-		motor_disable();
+		_motor_disable(1);
 
 	TIM3_CCR2 = (abs(speed) * PMOTOR) / 100;
 }
