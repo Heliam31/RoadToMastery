@@ -1,7 +1,6 @@
 
 #include "utils.h"
 
-
 /*
 ** @brief: Return the absolute value of x
 ** @param[in]: x: the number

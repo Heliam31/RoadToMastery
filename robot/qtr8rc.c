@@ -9,6 +9,7 @@
 #include <stm32f4/adc.h>
 
 #include "qtr8rc.h"
+#include "utils.h"
 
 
 #define NB_QTR_SENSORS 8
@@ -22,29 +23,34 @@
 #define IR6_LED    3
 #define IR7_LED    6
 #define IR8_LED    7
-const int IR_LEDS[8] = {IR1_LED, IR2_LED, IR3_LED, IR4_LED, IR5_LED, IR6_LED, IR7_LED, IR8_LED};
 #define ON_LED    11
+const int IR_LEDS[8] = {IR1_LED, IR2_LED, IR3_LED, IR4_LED, IR5_LED, IR6_LED, IR7_LED, IR8_LED};
 
 // TIM4
-#define N 1
+#define N 0.4
 #define WAIT_PSC 1000
-#define WAIT_DELAY (N*APB1_CLK)/WAIT_PSC
-int PERIOD = WAIT_DELAY;
-int _maxValue = 4000;
+#define WAIT_qtr8rc_delay (N*APB1_CLK)/WAIT_PSC
+const int PERIOD = WAIT_qtr8rc_delay;
 
-// GLOBAL
-int actives = 0;
-int position;
 
-void _delay(int cycles) {
+// MISC
+const int _maxValue = PERIOD / 4;
+
+int calMaxValues[NB_QTR_SENSORS] = {0};
+int calMinValues[NB_QTR_SENSORS] = {0};
+uint16_t _lastPosition = 0;
+
+// UTILS
+void _qtr8rc_delay(int cycles) {
     for(int i = 0; i < cycles; i++) NOP;
 }
 
-void wait_seconds(float seconds) {
+void qtr8rc_wait_seconds(float seconds) {
     int cycles = seconds*APB1_CLK;
-    _delay(cycles);
+    _qtr8rc_delay(cycles);
 }
 
+// INIT
 void init_gpiod_out(void) {
     for (int i = 0; i < NB_QTR_SENSORS; i++) {
         GPIOD_MODER = REP_BITS(GPIOD_MODER, IR_LEDS[i] * 2, 2, GPIO_MODER_OUT);
@@ -83,36 +89,54 @@ void init_tim4_qtr8rc(){
 	TIM4_CR1 = TIM_CEN;
 }
 
-void compute_time(int *sensorValues, uint32_t elapsedTime) {
-    for (unsigned int i = 0; i < NB_QTR_SENSORS; i++) {
-        if (((GPIOD_IDR & (1 << IR_LEDS[i])) == 0) && (elapsedTime < sensorValues[i])){
-            sensorValues[i] = elapsedTime;
-        }
-    }
-}
-
-int compute_position(int *sensorValues) {
-    int sum = 0;
-    for (int i = 0; i < NB_QTR_SENSORS; i++) {
-        sum += sensorValues[i];
-    }
-    int rsl = 0;
-    int c = 0;
-    for (int i = 0; i < NB_QTR_SENSORS; i++) {
-        rsl += sensorValues[i] * c;
-        c += 1000;
-    }
-    return rsl/sum;
-}
-
 void qtr8rc_init(void) {
     init_gpio_qtr8rc();
 	init_tim4_qtr8rc();
+
+    /*Init minSensorValues*/
+    for (int i = 0; i < NB_QTR_SENSORS; i++) {
+        calMinValues[i] = _maxValue;
+    }
 }
 
-void qtr8rc_read(int* position) {
-    int sensorValues[NB_QTR_SENSORS] = {_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue};
+// FUNCTIONS
+int compute_position(int *sensorValues) {
 
+    int onLine = 0;
+    uint32_t avg = 0; // this is for the weighted total
+    uint16_t sum = 0; // this is for the denominator, which is <= 64000
+
+    for (uint8_t i = 0; i < NB_QTR_SENSORS; i++) {
+        uint16_t value = sensorValues[i];
+
+        // keep track of whether we see the line at all
+        if (value > 200) {
+            onLine = 1;
+        }
+
+        // only average in values that are above a noise threshold
+        if (value > 50) {
+            avg += (uint32_t)value * (i * 1000);
+            sum += value;
+        }
+    }
+
+    if (!onLine) {
+        // If it last read to the left of center, return 0.
+        if (_lastPosition < (NB_QTR_SENSORS - 1) * 1000 / 2) {
+            return 0;
+        }
+        // If it last read to the right of center, return the max.
+        else {
+            return (NB_QTR_SENSORS - 1) * 1000;
+        }
+    }
+
+    _lastPosition = avg / sum;
+    return _lastPosition;
+}
+
+void _read(int* sensorValues) {
     TIM4_CNT = 0;
     TIM4_SR = 0;
     TIM4_CR1 = TIM_CEN;
@@ -120,24 +144,97 @@ void qtr8rc_read(int* position) {
     init_gpiod_out();
     gpiod_drive_high();
 
-    wait_seconds(0.00001);
+    qtr8rc_wait_seconds(0.00001);
+
+    init_gpiod_in();
+    
+    uint32_t startTime = TIM4_CNT;
+    uint32_t elapsedTime = 0;
+    while (elapsedTime < _maxValue) {
+        // Calcule time at each iteration
+        elapsedTime = TIM4_CNT - startTime;
+
+        // Compute each led's value
+        for (unsigned int i = 0; i < NB_QTR_SENSORS; i++) {
+            if (((GPIOD_IDR & (1 << IR_LEDS[i])) == 0) && (elapsedTime < sensorValues[i])){
+                sensorValues[i] = elapsedTime;
+            }
+        }
+    }
+    TIM4_CR1 &= ~TIM_CEN;  // Disable the timer
+}
+
+// Debug
+// printf("\nMin - ");
+// for (int i =0; i < NB_QTR_SENSORS; i++) {
+//     printf("[%d]:%d, ", i+1, calMinValues[i]);
+// }
+// printf("\n");
+// printf("Max - ");
+// for (int i =0; i < NB_QTR_SENSORS; i++) {
+//     printf("[%d]:%d, ", i+1, calMaxValues[i]);
+// }
+// printf("\n\n");
+
+void qtr8rc_calibrate() {
+    int sensorValues[NB_QTR_SENSORS] = {_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue};
+
+    _read(sensorValues);
+    /*calibration*/
+    TIM4_CNT = 0;
+    TIM4_SR = 0;
+    TIM4_CR1 = TIM_CEN;
+
+    init_gpiod_out();
+    gpiod_drive_high();
+
+    qtr8rc_wait_seconds(0.00001);
 
     init_gpiod_in();
     
     uint32_t startTime = TIM4_CNT;
     uint32_t elapsedTime = 0;
     while (elapsedTime < _maxValue) { 
-        // Calcule le temps écoulé à chaque itération
+        // Compute time at each iter
         elapsedTime = TIM4_CNT - startTime;
-        compute_time(sensorValues, elapsedTime);
+        
+        for (unsigned int i = 0; i < NB_QTR_SENSORS; i++) {
+            if (((GPIOD_IDR & (1 << IR_LEDS[i])) == 0) && (elapsedTime < sensorValues[i])) {
+                if (elapsedTime < calMinValues[i])
+                    calMinValues[i] = elapsedTime;
+                if (elapsedTime > calMaxValues[i])
+                    calMaxValues[i] = elapsedTime;
+            }
+        }
     }
     TIM4_CR1 &= ~TIM_CEN;  // Disable the timer
     
-    // for (int i = 0; i < NB_QTR_SENSORS; i++) {
-    //     printf("C%d:%d, ", i+1, sensorValues[i]);
-    // }
-    // printf("\n");
+}
 
-    //calibrate_time(sensorValues);
+void qtr8rc_read_calibrated(int* position) {
+    int sensorValues[NB_QTR_SENSORS] = {_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue};
+
+    _read(sensorValues);
+
+    uint16_t calmin = 0, calmax = 0;
+    for (unsigned int i = 0; i < NB_QTR_SENSORS; i++) {
+
+        calmin = calMinValues[i];
+        calmax = calMaxValues[i];
+
+        // Appliquer la formule de calibration
+        int denominator = calmax - calmin;
+        int value = 0;
+
+        if (denominator != 0) {
+            value = ((sensorValues[i] - calmin) * 1000) / denominator;
+        }
+
+        if (value < 0) { value = 0; } 
+        else if (value > 1000) { value = 1000; }
+
+        sensorValues[i] = value;
+    }
+
     *position = compute_position(sensorValues);
 }
