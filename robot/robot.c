@@ -12,8 +12,9 @@
 #include "motor_driver.h"
 #include "utils.h"
 
-// DEBUG LED (GPIOD)
+// DEBUG (GPIO)
 #define GREEN_LED 12
+#define BUT 0
 
 // TIMER POUR SYNC
 #define N 0.1
@@ -44,9 +45,16 @@ void init_gpio_led(void) {
 	GPIOD_OTYPER &= ~(1<<GREEN_LED);
 }
 
+void init_gpio_button(void) {
+    GPIOA_MODER = REP_BITS(GPIOA_MODER, BUT*2, 2, GPIO_MODER_IN);
+	GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, BUT*2, 2, GPIO_PUPDR_PD);
+}
+
 void init(void) {
     init_timer_sync();
     init_gpio_led();
+    init_gpio_button();
+
     qtr8rc_init();
     motor_init();
 }
@@ -80,34 +88,32 @@ int main(void) {
     init();
     
     int position = 0;
-    int motorLeftSpeed = 0;
-    int motorRightSpeed = 0;
-    
-    printf("\nCalibrating");
-    set_speed_left(-18);
-    set_speed_right(18);
+    int motorLeftSpeed = 25;
+    int motorRightSpeed = 25;
 
-    // calibration of IR
-    for (size_t i = 0; i < 50; i++)
-    {
-        qtr8rc_calibrate();
-        // printf(".");
-        robot_wait_seconds(0.2);
+    int start = 0;
+    while(!start) {
+        if ((GPIOA_IDR & (1 << BUT)) != 0)  {
+            start = 1;
+        }
     }
-    set_speed_left(0);
-    set_speed_right(0);
-    allumer_led();
-    robot_wait_seconds(1);
-    printf("\nReady !\n");
-    robot_wait_seconds(4);
-    eteindre_led();
+
+    printf("Button pushed 1\n");
+
+    qtr8rc_calibrate();
+
+    start = 0;
+    while(!start) {
+        if ((GPIOA_IDR & (1 << BUT)) != 0)  {
+            start = 1;
+        }
+    }
+
+    printf("Button pushed 2\n");
+    printf("Start\n");
 
     while(1){
-        // qtr8rc_read(&position);
         qtr8rc_read_calibrated(&position);
-
-        calculate_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
-
         set_speed_left(motorLeftSpeed);
         set_speed_right(motorRightSpeed);
     }
