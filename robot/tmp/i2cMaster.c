@@ -21,34 +21,46 @@
 #define SDA 9
 #define SCL 8
 
-// these should go to cs43l22 related headers
-#define ADDRESS 0x55
-#define REGID  0x01
-#define CHIPID 0x1C // first 5 bits of reg
-
-volatile uint8_t DeviceAddr = 0x09;
+volatile uint8_t DeviceAddr = 0x32;
 
 /*************************************************
 * function declarations
 *************************************************/
 
-my_delay_1( void )
-{
-   int i = 72e6/2/4;
+void delay_ms(uint32_t ms) {
+    // Set the prescaler value for 1ms ticks
+    TIM2_PSC = APB1_CLK / 1000 - 1;
 
-   while( i > 0 )
-     {
-        i--;
-        __asm__( "nop" );
-     }
+    // Set the auto-reload value for 1ms
+    TIM2_ARR = 71999;
+
+    // Enable the timer
+    TIM2_CR1 |= TIM_CEN;
+
+    for (uint32_t i = 0; i < ms; ++i) {
+        // Wait until the update event occurs (1ms)
+        while ((TIM2_SR & TIM_UIF)==0) {
+            // Wait
+        }
+        printf("sorti UIF \n");
+        // Clear the update event flag
+        TIM2_ARR = 71999;
+        TIM2_SR = 0;
+    }
+
+    // Disable the timer
+    TIM2_CR1 &= ~TIM_CEN;
 }
 
 static inline void __i2c_start() {
     uint16_t reg;
     I2C1_CR1 |= I2C_CR1_START;
     while(!(I2C1_SR1 & I2C_SR1_SB));
+    printf("%d\n", I2C1_SR1); 
+    
     printf("STarted\n");
     reg = I2C1_SR1;
+    (void) reg;
 }
 
 static inline void __i2c_stop() {
@@ -58,13 +70,14 @@ static inline void __i2c_stop() {
 
 void i2c_write(uint8_t regaddr, uint8_t data) {
     // send start condition
+    
     printf("avant start\n");
     __i2c_start();
     
     // send chipaddr in write mode
     // wait until address is sent
     
-    I2C1_DR = (DeviceAddr << 1);
+    I2C1_DR = (0x09 << 1) | 0;
     while (!(I2C1_SR1 & I2C_SR1_ADDR));//{ 
     //uint8_t temp = I2C1_SR1 | I2C1_SR2;  // read SR1 and SR2 to clear the ADDR bit
     //printf("%d\n", I2C1_SR1);};
@@ -180,13 +193,13 @@ int main(void)
 	// }
     
     GPIOB_MODER = REP_BITS(GPIOB_MODER, SCL*2, 2, GPIO_MODER_ALT);
-    GPIOB_AFRH = REP_BITS(GPIOB_AFRH, 0*4, 4, 4);
+    GPIOB_AFRL = REP_BITS(GPIOB_AFRL, 6*4, 4, 4);
     //GPIOB_OSPEEDR = REP_BITS(GPIOB_OSPEEDR, SCL*2, 2, 3);
     //GPIOB_PUPDR = REP_BITS(GPIOB_PUPDR, SCL*2 , 2, GPIO_PUPDR_PU);
     //GPIOB_OTYPER |= (1<<SCL);
 
     GPIOB_MODER = REP_BITS(GPIOB_MODER, SDA*2, 2, GPIO_MODER_ALT);
-    GPIOB_AFRH = REP_BITS(GPIOB_AFRH, 1*4, 4, 4);
+    GPIOB_AFRL = REP_BITS(GPIOB_AFRL, 7*4, 4, 4);
     //GPIOB_OSPEEDR = REP_BITS(GPIOB_OSPEEDR, SDA*2, 2, 3);
     //GPIOB_PUPDR = REP_BITS(GPIOB_PUPDR, SDA*2 , 2, GPIO_PUPDR_PU);
     //GPIOB_OTYPER |= (1<<SDA);
@@ -198,10 +211,25 @@ int main(void)
     I2C1_CR1 = 0;
 
     // I2C1_CR2 |= (I2C_CR2_ITERREN); // enable error interrupt
+<<<<<<< HEAD
+    //I2C1_CR2 &= 0xffc0;
+    I2C1_CR2 = 42; // 10Mhz periph clock
+    //I2C1_CCR &= 0xf000;
+    //I2C1_CCR |= 42;
+    I2C1_CCR = 0xd2; // 210d * ((1/42)*1000)
+    I2C1_TRISE = 43;
+=======
 
+<<<<<<< HEAD
     I2C1_CR2 = 42; // 10Mhz periph clock
     I2C1_CCR = 208; // 210d * ((1/42)*1000)
     I2C1_TRISE = 42;
+=======
+    I2C1_CR2 = 45; // 10Mhz periph clock
+    I2C1_CCR = 225; // 210d * ((1/42)*1000)
+    I2C1_TRISE = 46;
+>>>>>>> 02e533c4d9c33d1916b802c30c126fcc52003598
+>>>>>>> 0785943827771453b64a91d0ac490e3df45791be
     // enable error interrupt from NVIC
 
     //init_NVIC();

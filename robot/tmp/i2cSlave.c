@@ -17,7 +17,7 @@
 #define BLUE_LED	15
 
 //I2C ports (GPIOB)
-#define SDA 7
+#define SDA 9
 #define SCL 8
 
 
@@ -201,7 +201,7 @@ i2c_slave_init(uint8_t ownaddress)
     //GPIOB_OTYPER &= (1<<SCL);
 
     GPIOB_MODER = REP_BITS(GPIOB_MODER, SDA*2, 2, GPIO_MODER_ALT);
-    GPIOB_AFRL = REP_BITS(GPIOB_AFRL, 7*4, 4, 4);
+    GPIOB_AFRH = REP_BITS(GPIOB_AFRH, 1*4, 4, 4);
     // GPIOB_PUPDR = REP_BITS(GPIOB_PUPDR, SDA*2 , 2, GPIO_PUPDR_PD);
     //GPIOB_OTYPER &= (1<<SDA);
 
@@ -215,20 +215,28 @@ i2c_slave_init(uint8_t ownaddress)
 	reg16 |= 45;
 	I2C1_CR2 = reg16;
 
-    I2C1_CCR &= ~(1 << 15);
+  I2C1_CCR &= ~(1 << 15);
 
 	reg16 = I2C1_CCR & 0xf000; /* Clear bits [11:0]. */
+<<<<<<< HEAD
+	reg16 |= 208;
+	I2C1_CCR = reg16;
+    
+	/* Sm mode, (100kHz) freqMhz + 1 */
+	I2C1_TRISE = 42;
+=======
 	reg16 |= 225;
 	I2C1_CCR = reg16;
     
 	/* Sm mode, (100kHz) freqMhz + 1 */
 	I2C1_TRISE = 46;
+>>>>>>> 02e533c4d9c33d1916b802c30c126fcc52003598
 
-    I2C1_OAR1 = (ownaddress << 1)|(1 << 14);
+  I2C1_OAR1 = (ownaddress << 1)|(1 << 14);
 
 
-    I2C1_CR2 |= I2C_CR2_ITERREN|I2C_CR2_ITEVTEN|I2C_CR2_ITBUFFEN;
-    I2C1_CR1 |=I2C_CR1_PE|I2C_CR1_ACK;
+  I2C1_CR2 |= I2C_CR2_ITERREN|I2C_CR2_ITEVTEN|I2C_CR2_ITBUFFEN;
+  I2C1_CR1 |=I2C_CR1_PE|I2C_CR1_ACK;
  // enable i2c
 
     // slave needs to acknowledge on receiving bytes
