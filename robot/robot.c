@@ -74,6 +74,7 @@ void eteindre_led(void) {
 }
 
 int main(void) {
+    printf("\n\n\nInitialization...\n");
 
     RCC_AHB1ENR |= RCC_GPIOAEN;
 	RCC_AHB1ENR |= RCC_GPIODEN;
@@ -92,16 +93,37 @@ int main(void) {
     int motorRightSpeed = 25;
 
     int start = 0;
+    
+    allumer_led();
     while(!start) {
         if ((GPIOA_IDR & (1 << BUT)) != 0)  {
             start = 1;
         }
     }
+    eteindre_led();
 
-    printf("Button pushed 1\n");
+    printf("Calibrating...\n");
 
-    qtr8rc_calibrate();
+    set_speed_left(-18);
+    set_speed_right(18);
 
+    for (size_t i = 0; i < 50; i++)
+    {
+        qtr8rc_calibrate();
+        robot_wait_seconds(0.2);
+    }
+
+    display_calMinValues();
+    display_calMaxValues();
+
+    printf("Ready !\n");
+
+    set_speed_left(0);
+    set_speed_right(0);
+
+    robot_wait_seconds(1);
+
+    allumer_led();
     start = 0;
     while(!start) {
         if ((GPIOA_IDR & (1 << BUT)) != 0)  {
@@ -109,12 +131,16 @@ int main(void) {
         }
     }
 
-    printf("Button pushed 2\n");
-    printf("Start\n");
+    eteindre_led();
+    printf("Start !\n");
 
     while(1){
         qtr8rc_read_calibrated(&position);
-        set_speed_left(motorLeftSpeed);
-        set_speed_right(motorRightSpeed);
+        // printf("-> pos: %d\n",position);
+
+        compute_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
+
+        // set_speed_left(motorLeftSpeed);
+        // set_speed_right(motorRightSpeed);
     }
 }
