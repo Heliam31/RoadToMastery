@@ -199,9 +199,9 @@ int main(void)
 
     // I2C1_CR2 |= (I2C_CR2_ITERREN); // enable error interrupt
 
-    I2C1_CR2 = 45; // 10Mhz periph clock
-    I2C1_CCR = 225; // 210d * ((1/42)*1000)
-    I2C1_TRISE = 46;
+    I2C1_CR2 = 42; // 10Mhz periph clock
+    I2C1_CCR = 208; // 210d * ((1/42)*1000)
+    I2C1_TRISE = 42;
     // enable error interrupt from NVIC
 
     //init_NVIC();

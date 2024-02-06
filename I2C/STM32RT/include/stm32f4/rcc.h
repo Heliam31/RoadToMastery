@@ -85,6 +85,7 @@
 #define RCC_TIM14EN		(1 << 8)
 #define RCC_DACEN		(1 << 29)
 #define RCC_I2C1EN      (1 << 21)
+#define RCC_APB1ENR_PWREN (1 << 28)
 
 // APB2
 #define RCC_TIM1EN		(1 << 0)

@@ -17,7 +17,6 @@
 
   ******************************************************************************
 */
-#include <stdlib.h> 
 #include <tinyprintf.h>
 #include <stm32f4/rcc.h>
 #include <stm32f4/gpio.h>
@@ -25,9 +24,8 @@
 #include <stm32f4/exti.h>
 #include <stm32f4/syscfg.h>
 #include <stm32f4/tim.h>
-#include <stm32f4/adc.h>
-#include <stm32f4/dac.h>
 #include <stm32f4/i2c.h>
+#include <stm32f4/adc.h>
 
 #include "I2C.h"
 #include "RccConfig.h"
@@ -50,16 +48,16 @@ void I2C_Config (void)
 */
 	
 	// Enable the I2C CLOCK and GPIO CLOCK
-	RCC_APB1ENR |= RCC_I2C1EN;  // enable I2C CLOCK
-	RCC_AHB1ENR |= RCC_GPIOBEN;  // Enable GPIOB CLOCK
+	RCC_APB1ENR |= (1<<21);  // enable I2C CLOCK
+	RCC_AHB1ENR |= (1<<1);  // Enable GPIOB CLOCK
 	
 	
 	// Configure the I2C PINs for ALternate Functions
-	GPIOB_MODER |= (2<<16) | (2<<18);  // Bits (17:16)= 1:0 --> Alternate Function for Pin PB8; Bits (19:18)= 1:0 --> Alternate Function for Pin PB9
-	GPIOB_OTYPER |= (1<<8) | (1<<9);  //  Bit8=1, Bit9=1  output open drain
-	GPIOB_OSPEEDR |= (3<<16) | (3<<18);  // Bits (17:16)= 1:1 --> High Speed for PIN PB8; Bits (19:18)= 1:1 --> High Speed for PIN PB9
-	GPIOB_PUPDR |= (1<<16) | (1<<18);  // Bits (17:16)= 0:1 --> Pull up for PIN PB8; Bits (19:18)= 0:1 --> pull up for PIN PB9
-	GPIOB_AFRL |= (4<<0) | (4<<4);  // Bits (3:2:1:0) = 0:1:0:0 --> AF4 for pin PB8;  Bits (7:6:5:4) = 0:1:0:0 --> AF4 for pin PB9
+	GPIOB_MODER = REP_BITS(GPIOB_MODER, 6*2, 2, GPIO_MODER_ALT);
+    GPIOB_AFRL = REP_BITS(GPIOB_AFRL, 6*4, 4, 4);
+
+    GPIOB_MODER = REP_BITS(GPIOB_MODER, 7*2, 2, GPIO_MODER_ALT);
+    GPIOB_AFRL = REP_BITS(GPIOB_AFRL, 7*4, 4, 4);
 	
 	
 	// Reset the I2C 
