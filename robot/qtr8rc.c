@@ -169,13 +169,15 @@ void check_junctions(int *sensorValues, int *position, int *junctions) {
     int RIGHT = 1;
 
     for (int i = 0; i < NB_QTR_SENSORS; i++) {
-        if (sensorValues[i] >= calMaxValues[i]) {
+        if (sensorValues[i] == 1000) {
             tab[i] = 1;
+        } else {
+            tab[i] = 0;
         }
     }
 
-    junctions[LEFT] = tab[0] & tab[1];
-    junctions[RIGHT] = tab[6] & tab[7];
+    junctions[RIGHT] = tab[0] & tab[1] & tab[2];
+    junctions[LEFT] = tab[5] & tab[6] & tab[7];
 }
 
 /*
