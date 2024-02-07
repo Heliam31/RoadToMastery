@@ -62,16 +62,15 @@ uart_init()
     // tmpreg |= ((((fractionaldivider * 16) + 50) / 100)) & ((uint8_t)0x0F);
     USART1_CR1 = 0;
     // USART1_BRR = (uint16_t)tmpreg;
-    USART1_CR1 |= (0<<10); //Parity Enable
     USART1_CR1 |= USART_CR1_TE | USART_CR1_RE;
 
     //9600 baud
-    USART1_BRR |= (273<<4);
-    USART1_BRR |= 7;
+    // USART1_BRR |= (273<<4);
+    // USART1_BRR |= 7;
 
-    //115200
-    // USART1_BRR |= (22<<4);
-    // USART1_BRR |= 13;   
+    //115200 baud
+    USART1_BRR |= (22<<4);
+    USART1_BRR |= 13;   
 
     // USART1_CR2 &= ~USART_CR2_STOP1 ;
     // USART1_CR2 &= ~USART_CR2_STOP2 ;
@@ -93,13 +92,13 @@ int main( void )
 
    while( 1 )
      {
-        volatile uint8_t msg[] = "https://furkan.space/\n";
+        volatile uint8_t msg[] = "h";
         for (uint32_t i=0; i<sizeof(msg); i++){
             // send character
             USART1_DR = 7;
             // wait for transmit complete
             while(!(USART1_SR & (1 << 6)));
-            for(int i=0; i < 10000000; i++);
+            //for(int i=0; i < 10000000; i++);
         }
 
         for(int i=0; i < 1000000000; i++);

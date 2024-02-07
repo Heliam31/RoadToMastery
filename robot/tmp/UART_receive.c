@@ -34,42 +34,54 @@ void write(){
 
 void read(){
     //printf("ha");
-    //while((USART1_SR & USART_SR_RXNE) == 0); 
+    while((USART1_SR & USART_SR_RXNE) == 0); 
+    //printf("USART1_SR = %d\n", USART1_SR);
+    //for(int i=0; i < 2000000; i++);
+        
     //printf("here");
     int c =  USART1_DR;
     printf("%d\n",c);
+        
 }
 
-static void
-uart_init()
+void uart_init1()
 {
 
     
     //init_NVIC();
-
     // configure i2c pins
-    GPIOA_MODER = REP_BITS(GPIOA_MODER, TX*2, 2, GPIO_MODER_ALT);
-    GPIOA_AFRH = REP_BITS(GPIOA_AFRH, 1*4, 4, 7);
-    //GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, TX*2 , 2, GPIO_PUPDR_PD);
-    //GPIOA_OSPEEDR = REP_BITS(GPIOA_OSPEEDR, TX*2, 2, GPIO_OSPEEDR_HI);
-    //GPIOA_OTYPER |= (0<<TX);
+    // GPIOA_MODER = REP_BITS(GPIOA_MODER, TX*2, 2, GPIO_MODER_ALT);
+    // GPIOA_AFRH = REP_BITS(GPIOA_AFRH, 1*4, 4, 7);
+    // //GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, TX*2 , 2, GPIO_PUPDR_PD);
+    // GPIOA_OSPEEDR = REP_BITS(GPIOA_OSPEEDR, TX*2, 2, GPIO_OSPEEDR_HI);
+    // //GPIOA_OTYPER |= (0<<TX);
 
 
     GPIOA_MODER = REP_BITS(GPIOA_MODER, RX*2, 2, GPIO_MODER_ALT);
     GPIOA_AFRH = REP_BITS(GPIOA_AFRH, 2*4, 4, 7);
     //GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, RX*2 , 2, GPIO_PUPDR_PD);
-    //GPIOA_OSPEEDR = REP_BITS(GPIOA_OSPEEDR, RX*2, 2, GPIO_OSPEEDR_HI);
+    GPIOA_OSPEEDR = REP_BITS(GPIOA_OSPEEDR, RX*2, 2, GPIO_OSPEEDR_HI);
     //GPIOA_OTYPER |= (0<<RX);
-    USART1_CR1 |= 0x00;
-
-    USART1_CR1 |= USART_CR1_UE;
-    USART1_CR1 |= ~(1<<12);
-    //USART1_BRR |= (int) (APB1_CLK / (16*9600)) << 4;
-    USART1_BRR |= 274;
-    USART1_CR2 &= ~USART_CR2_STOP1 ;
-    USART1_CR2 &= ~USART_CR2_STOP2 ;
-    //USART1_CR3 &= ~USART_CR3_HDSEL;
+    USART1_CR1 = 0;
     USART1_CR1 |= USART_CR1_TE | USART_CR1_RE;
+    
+
+    //USART1_BRR = (int) (APB1_CLK / (16*9600)) << 4;
+    //USART1_BRR = APB1_CLK/38400;
+    //USART1_BRR = (2734375/10000) << 4;
+    //9600 bauds
+    USART1_BRR |= (273 << 4);
+    USART1_BRR |= 7; 
+    //115200 bauds
+    //USART1_BRR |= (22 << 4);
+    //USART1_BRR |= 13; 
+    
+    //USART1_CR2 &= ~USART_CR2_STOP1 ;
+    //USART1_CR2 &= ~USART_CR2_STOP2 ;
+    //USART1_CR3 &= ~USART_CR3_HDSEL;
+    USART1_CR1 |= USART_CR1_UE;
+    
+  
 }
 
 
@@ -78,11 +90,10 @@ uart_init()
 int main( void )
 {
     RCC_AHB1ENR |= RCC_GPIOAEN;
-    RCC_APB1ENR |= RCC_I2C1EN;
     RCC_APB2ENR |= RCC_USART1EN;
 
    //initialize i2c slave
-   uart_init();
+   uart_init1();
    while( 1 )
      {
         
