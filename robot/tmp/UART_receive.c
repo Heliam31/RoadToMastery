@@ -27,41 +27,45 @@ void write(){
     //while (!(USART1_SR & USART_SR_TXE)) {};
     USART1_DR = 7; 
     //USART1_CR1 |= USART_CR1_SBK; 
-    printf("here");
+    //printf("here");
     while((USART1_SR & USART_SR_TC) == 0);
     printf("her2\n");
 }
 
 void read(){
-    while((USART1_SR & USART_SR_RXNE) == 0); 
+    //printf("ha");
+    //while((USART1_SR & USART_SR_RXNE) == 0); 
+    //printf("here");
     int c =  USART1_DR;
-    printf("%d\n",c)
+    printf("%d\n",c);
 }
 
 static void
 uart_init()
 {
 
-
+    
     //init_NVIC();
 
     // configure i2c pins
     GPIOA_MODER = REP_BITS(GPIOA_MODER, TX*2, 2, GPIO_MODER_ALT);
     GPIOA_AFRH = REP_BITS(GPIOA_AFRH, 1*4, 4, 7);
-    GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, TX*2 , 2, GPIO_PUPDR_PD);
-    GPIOA_OSPEEDR = REP_BITS(GPIOA_OSPEEDR, TX*2, 2, GPIO_OSPEEDR_HI);
-    GPIOA_OTYPER |= (0<<TX);
+    //GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, TX*2 , 2, GPIO_PUPDR_PD);
+    //GPIOA_OSPEEDR = REP_BITS(GPIOA_OSPEEDR, TX*2, 2, GPIO_OSPEEDR_HI);
+    //GPIOA_OTYPER |= (0<<TX);
 
 
     GPIOA_MODER = REP_BITS(GPIOA_MODER, RX*2, 2, GPIO_MODER_ALT);
-    GPIOA_AFRL = REP_BITS(GPIOA_AFRL, 2*4, 4, 7);
-    GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, RX*2 , 2, GPIO_PUPDR_PD);
-    GPIOA_OSPEEDR = REP_BITS(GPIOA_OSPEEDR, RX*2, 2, GPIO_OSPEEDR_HI);
-    GPIOA_OTYPER |= (0<<RX);
+    GPIOA_AFRH = REP_BITS(GPIOA_AFRH, 2*4, 4, 7);
+    //GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, RX*2 , 2, GPIO_PUPDR_PD);
+    //GPIOA_OSPEEDR = REP_BITS(GPIOA_OSPEEDR, RX*2, 2, GPIO_OSPEEDR_HI);
+    //GPIOA_OTYPER |= (0<<RX);
+    USART1_CR1 |= 0x00;
 
     USART1_CR1 |= USART_CR1_UE;
-    USART1_BRR |= (int) (APB1_CLK / (16*9600)) << 4;
-    //USART1_BRR |= 4375;
+    USART1_CR1 |= ~(1<<12);
+    //USART1_BRR |= (int) (APB1_CLK / (16*9600)) << 4;
+    USART1_BRR |= 274;
     USART1_CR2 &= ~USART_CR2_STOP1 ;
     USART1_CR2 &= ~USART_CR2_STOP2 ;
     //USART1_CR3 &= ~USART_CR3_HDSEL;
@@ -79,12 +83,11 @@ int main( void )
 
    //initialize i2c slave
    uart_init();
-
    while( 1 )
      {
         
         read();
-        for(int i=0; i < 200000000; i++);
+        //for(int i=0; i < 200000000; i++);
         //while((USART1_SR & USART_SR_RXNE) == 0); 
         //int c =  USART1_DR;
         //printf("%d\n", c);

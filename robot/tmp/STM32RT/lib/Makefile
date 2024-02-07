@@ -11,8 +11,8 @@ OBJECTS = $(SOURCES:.c=.o)
 ARCH=arm-none-eabi-
 CC=$(ARCH)gcc
 OBJCOPY=$(ARCH)objcopy
+# CFLAGS += -g3 -Wall -O2
 CFLAGS += -g3 -Wall -O2
-
 CFLAGS += \
 	-T../scripts/link.ld \
 	-mfloat-abi=hard \
