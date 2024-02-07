@@ -8,7 +8,7 @@
 #define Kp 0.04 //set up the constants value
 #define Ki 0
 #define Kd 0
-#define REFERENCE 3500
+#define REFERENCE 3650
 
 #define LEFT_MOTOR_OFFSET 0
 #define RIGHT_MOTOR_OFFSET 0
@@ -16,10 +16,10 @@
 int errors[10] = {0,0,0,0,0,0,0,0,0,0};
 int errorPrec = 0;
 int errorSum = 0;
-const int maxSpeedRight = 10;
-const int maxSpeedLeft = 10;
-const int baseSpeedRight = 9;
-const int baseSpeedLeft = 9;
+const int maxSpeedRight = 20;
+const int maxSpeedLeft = 20;
+const int baseSpeedRight = 0;
+const int baseSpeedLeft = 0;
 
 int errors_sum(int index, int abs) {
     int sum = 0;
@@ -45,7 +45,7 @@ void save_error(int error) {
     errors[0] = error;
 }
 
-int calculate_pid(const int position, const int error) {
+int _compute_pid(const int position, const int error) {
     errorSum += error;
 
     int motorSpeed = error*Kp + errorSum*Ki + (error - errorPrec)*Kd;
@@ -55,10 +55,10 @@ int calculate_pid(const int position, const int error) {
     return motorSpeed;
 }
 
-void calculate_motor_speed(int *motorLeftSpeed, int *motorRightSpeed, const int position) {
+void compute_motor_speed(int *motorLeftSpeed, int *motorRightSpeed, const int position) {
     int error = REFERENCE - position;
     // printf("error: %d\n",error);
-    int motorSpeed = calculate_pid(position, error);
+    int motorSpeed = _compute_pid(position, error);
 
     *motorLeftSpeed = (baseSpeedLeft + motorSpeed);
     *motorRightSpeed = (baseSpeedRight - motorSpeed);
@@ -69,6 +69,6 @@ void calculate_motor_speed(int *motorLeftSpeed, int *motorRightSpeed, const int 
     *motorLeftSpeed = *motorLeftSpeed + maxSpeedLeft - (abs(error)/1000)*maxSpeedLeft + LEFT_MOTOR_OFFSET;
     *motorRightSpeed = *motorRightSpeed + maxSpeedRight - (abs(error)/1000)*maxSpeedRight + RIGHT_MOTOR_OFFSET;
 
-    // printf("%d: %d,%d \n",position, *motorLeftSpeed, *motorRightSpeed);
+    printf("%d: %d,%d \n",position, *motorLeftSpeed, *motorRightSpeed);
 }
 

@@ -3,5 +3,6 @@
 
 void qtr8rc_init(void);
 void qtr8rc_read_calibrated(int* position);
-
+void display_calMaxValues();
+void display_calMinValues();
 #endif
