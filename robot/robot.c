@@ -89,10 +89,11 @@ int main(void) {
     init();
     
     int position = 0;
+    int junctions[2] = {0};
     int motorLeftSpeed = 25;
     int motorRightSpeed = 25;
 
-    int start = 0;
+    int stop = 0;
     
     turn_on(GREEN_LED);
     wait_start();
@@ -106,12 +107,18 @@ int main(void) {
     printf("Start !\n");
 
     while(1){
-        qtr8rc_read_calibrated(&position);
-        // printf("-> pos: %d\n",position);
-
-        compute_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
-
-        set_speed_left(motorLeftSpeed);
-        set_speed_right(motorRightSpeed);
+        qtr8rc_read_calibrated(&position, junctions);
+        if (junctions[0] | junctions[1]) {
+            set_speed_left(0);
+            set_speed_right(0);
+            stop = 1;
+        } else if (!stop) {
+            compute_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
+            set_speed_left(motorLeftSpeed);
+            set_speed_right(motorRightSpeed);
+        }
+        if ((GPIOA_IDR & (1 << SW_USER)) != 0) {
+            stop = 0;
+        }
     }
 }

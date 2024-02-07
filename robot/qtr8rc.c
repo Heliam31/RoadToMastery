@@ -265,14 +265,13 @@ void qtr8rc_calibrate(void) {
     qtr8rc_read_line(sensorValues,1);
 }
 
-void qtr8rc_read_calibrated(int* position) {
+void qtr8rc_read_calibrated(int* position, int *junctions) {
     int sensorValues[NB_QTR_SENSORS] = {_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue};
    
     qtr8rc_read_line(sensorValues,0);
     qtr8rc_normalize(sensorValues);
     *position = compute_position(sensorValues);
-
-    int junctions[2] = {0};
+    
     check_junctions(sensorValues, position, junctions);
     // printf("[LEFT]:%d; [RIGHT]:%d\n", junctions[0],junctions[1]);
 }

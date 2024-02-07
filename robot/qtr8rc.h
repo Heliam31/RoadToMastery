@@ -6,7 +6,7 @@ void qtr8rc_normalize(int *sensorValues);
 
 void qtr8rc_init(void);
 void qtr8rc_calibrate(void);
-void qtr8rc_read_calibrated(int *position);
+void qtr8rc_read_calibrated(int *position, int *junctions);
 
 void display_calMaxValues(void);
 void display_calMinValues(void);
