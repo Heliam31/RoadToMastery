@@ -120,6 +120,9 @@ void (* const table_interrupt_vector[256])() = {
 #define FLASH_ACR_DCEN	(1 << 10)
 #define FLASH_ACR_ICEN	(1 << 9)
 
+#define PWR_BASE	0x40007000
+#define PWR_CR	_IOREG(PWR_BASE, 0x00)
+#define PWR_CR_VOS	(1 << 14)
 
 /*** reset handler ***/
 void handler_reset() {
@@ -143,6 +146,11 @@ void handler_reset() {
 	// configure HSE clock
 	RCC_CR |= RCC_CR_HSEON;
 	while((RCC_CR & RCC_CR_HSERDY) == 0);
+
+	//AJOUTED--------------------------------------------------------------------
+	RCC_APB1ENR |= RCC_APB1ENR_PWREN;
+	PWR_CR |= PWR_CR_VOS; 
+	//
 
 	// configure AHB and AHP[12]
 	RCC_CFGGR_HPRE_SET(RCC_CFGR, RCC_HPRE_NODIV);

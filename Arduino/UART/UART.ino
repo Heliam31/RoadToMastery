@@ -8,7 +8,7 @@ void setup() {
 
 
 void loop() {
-  Serial.println("oiu"):
+  Serial.println("oiu");
   delay(500);
   if (Serial.available() > 0) {
       // read the incoming byte:

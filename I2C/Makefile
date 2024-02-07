@@ -14,7 +14,7 @@ ARCH=arm-none-eabi-
 CC=$(ARCH)gcc
 AS=$(ARCH)as
 OBJCOPY=$(ARCH)objcopy
-CFLAGS += -g3 -Wall -O2
+CFLAGS += -Wall
 # ASFLAGS += -g3
 
 CFLAGS += \
