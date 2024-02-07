@@ -13,12 +13,12 @@
 
 
 // broches utilisées du GPIOC 
-#define PC0 0
-#define PC1 1
-#define PC2 2
-#define PC3 3
-#define PC6 6
-#define PC7 7
+#define PC0 0	// in1
+#define PC1 1	// in2
+#define PC2 2	// in3
+#define PC3 3	// in4
+#define PC6 6 	// enA
+#define PC7 7 	// enB
 
 typedef enum motor_e {LEFT, RIGHT} Motor;
 

@@ -70,3 +70,31 @@ int sign(int x) {
     }
     return 0;
 }
+
+
+// ==================== STM32 ====================
+void sync(void) {
+    while(((TIM3_SR & TIM_UIF) == 0)) NOP;
+	TIM2_SR &= ~TIM_UIF;
+    return;
+}
+
+void turn_on(int led) {
+    GPIOD_BSRR = 1 << led;
+}
+
+void turn_off(int led) {
+    GPIOD_BSRR = 1 << (led + 16);
+}
+
+/*
+** @brief: Wait the pushed button 
+*/
+void wait_start(void){
+    int start = 0;
+    while(!start) {
+        if ((GPIOA_IDR & (1 << SW_USER)) != 0)  {
+            start = 1;
+        }
+    }
+}

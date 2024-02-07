@@ -17,4 +17,9 @@ int min(int a, int b);
 int clamp(int x, int a, int b);
 int sign(int x);
 
+void sync(void);
+void turn_on(int led);
+void turn_off(int led);
+void wait_start(void);
+
 #endif
