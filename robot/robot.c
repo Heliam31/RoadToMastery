@@ -140,7 +140,7 @@ int main(void) {
 
         compute_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
 
-        // set_speed_left(motorLeftSpeed);
-        // set_speed_right(motorRightSpeed);
+        set_speed_left(motorLeftSpeed);
+        set_speed_right(motorRightSpeed);
     }
 }

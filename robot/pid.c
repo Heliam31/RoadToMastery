@@ -8,7 +8,7 @@
 #define Kp 0.04 //set up the constants value
 #define Ki 0
 #define Kd 0
-#define REFERENCE 3430
+#define REFERENCE 3650
 
 #define LEFT_MOTOR_OFFSET 0
 #define RIGHT_MOTOR_OFFSET 0
@@ -16,10 +16,10 @@
 int errors[10] = {0,0,0,0,0,0,0,0,0,0};
 int errorPrec = 0;
 int errorSum = 0;
-const int maxSpeedRight = 10;
-const int maxSpeedLeft = 10;
-const int baseSpeedRight = 9;
-const int baseSpeedLeft = 9;
+const int maxSpeedRight = 20;
+const int maxSpeedLeft = 20;
+const int baseSpeedRight = 0;
+const int baseSpeedLeft = 0;
 
 int errors_sum(int index, int abs) {
     int sum = 0;
