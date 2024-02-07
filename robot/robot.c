@@ -1,16 +1,12 @@
-#include <tinyprintf.h>
-#include <stm32f4/rcc.h>
-#include <stm32f4/gpio.h>
-#include <stm32f4/nvic.h>
-#include <stm32f4/exti.h>
-#include <stm32f4/syscfg.h>
-#include <stm32f4/tim.h>
-#include <stm32f4/adc.h>
 
 #include "pid.h"
 #include "qtr8rc.h"
 #include "motor_driver.h"
 #include "utils.h"
+
+
+#define GREEN_LED 12
+#define BUTTON 0
 
 // TIMER POUR SYNC
 #define N 0.1
@@ -37,13 +33,13 @@ void init_timer_sync(void) {
 }
 
 void init_gpio_led(void) {
-	GPIOD_MODER = REP_BITS(GPIOD_MODER, LED_GREEN*2, 2, GPIO_MODER_OUT);
-	GPIOD_OTYPER &= ~(1<<LED_GREEN);
+	GPIOD_MODER = REP_BITS(GPIOD_MODER, GREEN_LED*2, 2, GPIO_MODER_OUT);
+	GPIOD_OTYPER &= ~(1<<GREEN_LED);
 }
 
 void init_gpio_button(void) {
-    GPIOA_MODER = REP_BITS(GPIOA_MODER, SW_USER*2, 2, GPIO_MODER_IN);
-	GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, SW_USER*2, 2, GPIO_PUPDR_PD);
+    GPIOA_MODER = REP_BITS(GPIOA_MODER, BUTTON*2, 2, GPIO_MODER_IN);
+	GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, BUTTON*2, 2, GPIO_PUPDR_PD);
 }
 
 void init(void) {
@@ -98,15 +94,15 @@ int main(void) {
 
     int start = 0;
     
-    turn_on(LED_GREEN);
+    turn_on(GREEN_LED);
     wait_start();
-    turn_off(LED_GREEN);
+    turn_off(GREEN_LED);
 
     calibrate();
 
-    turn_on(LED_GREEN);
+    turn_on(GREEN_LED);
     wait_start();
-    turn_off(LED_GREEN);
+    turn_off(GREEN_LED);
     printf("Start !\n");
 
     while(1){
