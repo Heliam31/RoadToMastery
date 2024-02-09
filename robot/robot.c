@@ -74,7 +74,7 @@ void eteindre_led(void) {
 }
 
 int main(void) {
-    printf("\n\n\nInitialization...\n");
+    printf("\n\n\nReady to calibrate !\n");
 
     RCC_AHB1ENR |= RCC_GPIOAEN;
 	RCC_AHB1ENR |= RCC_GPIODEN;
@@ -89,8 +89,8 @@ int main(void) {
     init();
     
     int position = 0;
-    int motorLeftSpeed = 25;
-    int motorRightSpeed = 25;
+    int motorLeftSpeed = 27;
+    int motorRightSpeed = 22;
 
     int start = 0;
     
@@ -104,8 +104,8 @@ int main(void) {
 
     printf("Calibrating...\n");
 
-    set_speed_left(-18);
-    set_speed_right(18);
+    set_speed_left(motorLeftSpeed);
+    set_speed_right(-motorRightSpeed);
 
     for (size_t i = 0; i < 50; i++)
     {
@@ -116,7 +116,7 @@ int main(void) {
     display_calMinValues();
     display_calMaxValues();
 
-    printf("Ready !\n");
+    printf("Initialization Complete...\n");
 
     set_speed_left(0);
     set_speed_right(0);
@@ -136,7 +136,6 @@ int main(void) {
 
     while(1){
         qtr8rc_read_calibrated(&position);
-        // printf("-> pos: %d\n",position);
 
         compute_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
 
