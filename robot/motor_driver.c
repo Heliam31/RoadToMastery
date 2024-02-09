@@ -131,12 +131,12 @@ void set_speed_right(int speed) {
 		return;
 	}
 
-	if (speed < 0) // backward
+	if (speed <= 0) // backward
 		set_backward(RIGHT);
 	else if (speed > 0) // forward
 		set_forward(RIGHT);
-	else if (speed == 0)
-		motor_disable(RIGHT);
+	// else if (speed == 0)
+	// 	motor_disable(RIGHT);
 
 	TIM3_CCR1 = (abs(speed) * PMOTOR) / 100;
 }
@@ -148,12 +148,12 @@ void set_speed_left(int speed) {
 		return;
 	}
 
-	if (speed < 0) // backward
+	if (speed <= 0) // backward
 		set_backward(LEFT);
 	else if (speed > 0) // forward
 		set_forward(LEFT);
-	else if (speed == 0)
-		motor_disable(LEFT);
+	// else if (speed == 0)
+	// 	motor_disable(LEFT);
 
 	TIM3_CCR2 = (abs(speed) * PMOTOR) / 100;
 }

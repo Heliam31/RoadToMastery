@@ -124,6 +124,11 @@ void qtr8rc_init(void) {
         // printf("[%d], ",calMinValues[i]);
         qtr8rc_wait_seconds(0.01);
     }
+
+    // // Debug values for PID testing
+    // int calMaxValues[NB_QTR_SENSORS] = {26266,26266,26266,26266,26266,26266,26266,26266,};
+    // int calMinValues[NB_QTR_SENSORS] = {6498,6223,6363,6843,6338,7176,6682,7517};
+
 }
 
 // FUNCTIONS
@@ -265,6 +270,6 @@ void qtr8rc_read_calibrated(int* position) {
         sensorValues[i] = value;
     }
 
-    _display_sensorValues(sensorValues);
+    // _display_sensorValues(sensorValues);
     *position = compute_position(sensorValues);
 }
