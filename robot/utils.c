@@ -74,7 +74,7 @@ int sign(int x) {
 
 // ==================== STM32 ====================
 void sync(void) {
-    while(((TIM3_SR & TIM_UIF) == 0)) NOP;
+    while(((TIM2_SR & TIM_UIF) == 0)) NOP;
 	TIM2_SR &= ~TIM_UIF;
     return;
 }

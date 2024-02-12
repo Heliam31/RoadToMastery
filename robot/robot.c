@@ -8,10 +8,15 @@
 #define GREEN_LED 12
 #define BUTTON 0
 
+#define ESP32_ADDR 0
+
 // TIMER POUR SYNC
 #define N 0.1
 #define PSC 128 // ->1s  // 8->0.01s
 #define PERIOD (N*APB1_CLK)/PSC
+
+// STATES
+typedef enum state_e {FOLLOWER, JONCTIONER} State;
 
 // UTILS 
 void _robot_delay(int cycles) {
@@ -50,7 +55,6 @@ void init(void) {
     motor_init();
 }
 
-
 void calibrate(void) {
     printf("Calibrating...\n");
 
@@ -73,6 +77,15 @@ void calibrate(void) {
     robot_wait_seconds(1);
 }
 
+typedef struct msg_s {
+    int addr;
+    int data[8];
+    int size;
+} msg_t;
+
+msg_t tmsg = {ESP32_ADDR, {0}, 8};
+msg_t rmsg = {ESP32_ADDR, {0}, 8};
+
 int main(void) {
     printf("\n\n\nInitialization...\n");
 
@@ -89,12 +102,13 @@ int main(void) {
     init();
     
     int position = 0;
-    int junctions[2] = {0};
+    int junctions[3] = {0};
     int motorLeftSpeed = 25;
     int motorRightSpeed = 25;
 
     int stop = 0;
-    
+    State state = FOLLOWER;
+
     turn_on(GREEN_LED);
     wait_start();
     turn_off(GREEN_LED);
@@ -108,17 +122,40 @@ int main(void) {
 
     while(1){
         qtr8rc_read_calibrated(&position, junctions);
-        if (junctions[0] | junctions[1]) {
-            set_speed_left(0);
-            set_speed_right(0);
-            stop = 1;
-        } else if (!stop) {
+
+        if ((junctions[0] | junctions[1]) == 1) {
+            state = JONCTIONER;
+        } else if (stop == 0) {
+            state = FOLLOWER;
+        }
+
+        switch (state) {
+        case FOLLOWER:
             compute_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
             set_speed_left(motorLeftSpeed);
             set_speed_right(motorRightSpeed);
-        }
-        if ((GPIOA_IDR & (1 << SW_USER)) != 0) {
-            stop = 0;
+            break;
+
+        case JONCTIONER:
+            set_speed_left(0);
+            set_speed_right(0);
+
+            qtr8rc_read_calibrated(&position, junctions);
+
+            tmsg->data = junctions;
+            tmsg->size = 2;
+
+            // i2c_send(tmsg->addr, tmsg->data, tmsg->size);
+            // i2c_read(rmsg->addr, rmsg->data, rmsg->size);
+            
+            if ((GPIOA_IDR & (1 << SW_USER)) != 0) {
+                stop = 0;
+            }
+
+            break;
+        
+        default:
+            break;
         }
     }
 }
