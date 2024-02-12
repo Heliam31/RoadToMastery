@@ -79,4 +79,3 @@ void compute_motor_speed(int *motorLeftSpeed, int *motorRightSpeed, const int po
 
     // printf("%d: %d,%d \n",position, *motorLeftSpeed, *motorRightSpeed);
 }
-

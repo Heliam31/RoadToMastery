@@ -1,20 +1,12 @@
-#include <tinyprintf.h>
-#include <stm32f4/rcc.h>
-#include <stm32f4/gpio.h>
-#include <stm32f4/nvic.h>
-#include <stm32f4/exti.h>
-#include <stm32f4/syscfg.h>
-#include <stm32f4/tim.h>
-#include <stm32f4/adc.h>
 
 #include "pid.h"
 #include "qtr8rc.h"
 #include "motor_driver.h"
 #include "utils.h"
 
-// DEBUG (GPIO)
+
 #define GREEN_LED 12
-#define BUT 0
+#define BUTTON 0
 
 // TIMER POUR SYNC
 #define N 0.1
@@ -46,31 +38,39 @@ void init_gpio_led(void) {
 }
 
 void init_gpio_button(void) {
-    GPIOA_MODER = REP_BITS(GPIOA_MODER, BUT*2, 2, GPIO_MODER_IN);
-	GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, BUT*2, 2, GPIO_PUPDR_PD);
+    GPIOA_MODER = REP_BITS(GPIOA_MODER, BUTTON*2, 2, GPIO_MODER_IN);
+	GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, BUTTON*2, 2, GPIO_PUPDR_PD);
 }
 
 void init(void) {
     init_timer_sync();
     init_gpio_led();
     init_gpio_button();
-
     qtr8rc_init();
     motor_init();
 }
 
-void sync(void) {
-    while(((TIM3_SR & TIM_UIF) == 0)) NOP;
-	TIM2_SR &= ~TIM_UIF;
-    return;
-}
 
-void allumer_led(void) {
-    GPIOD_BSRR = 1 << GREEN_LED;
-}
+void calibrate(void) {
+    printf("Calibrating...\n");
 
-void eteindre_led(void) {
-    GPIOD_BSRR = 1 << (GREEN_LED + 16);
+    set_speed_left(-18);
+    set_speed_right(18);
+
+    for (size_t i = 0; i < 50; i++) {
+        qtr8rc_calibrate();
+        robot_wait_seconds(0.2);
+    }
+
+    display_calMinValues();
+    display_calMaxValues();
+
+    printf("Ready !\n");
+
+    set_speed_left(0);
+    set_speed_right(0);
+
+    robot_wait_seconds(1);
 }
 
 int main(void) {
@@ -89,57 +89,36 @@ int main(void) {
     init();
     
     int position = 0;
+    int junctions[2] = {0};
     int motorLeftSpeed = 27;
     int motorRightSpeed = 22;
 
-    int start = 0;
+    int stop = 0;
     
-    allumer_led();
-    while(!start) {
-        if ((GPIOA_IDR & (1 << BUT)) != 0)  {
-            start = 1;
-        }
-    }
-    eteindre_led();
+    turn_on(GREEN_LED);
+    wait_start();
+    turn_off(GREEN_LED);
 
-    printf("Calibrating...\n");
+    calibrate();
 
-    set_speed_left(motorLeftSpeed);
-    set_speed_right(-motorRightSpeed);
-
-    for (size_t i = 0; i < 50; i++)
-    {
-        qtr8rc_calibrate();
-        robot_wait_seconds(0.2);
-    }
-
-    display_calMinValues();
-    display_calMaxValues();
-
-    printf("Initialization Complete...\n");
-
-    set_speed_left(0);
-    set_speed_right(0);
-
-    robot_wait_seconds(1);
-
-    allumer_led();
-    start = 0;
-    while(!start) {
-        if ((GPIOA_IDR & (1 << BUT)) != 0)  {
-            start = 1;
-        }
-    }
-
-    eteindre_led();
+    turn_on(GREEN_LED);
+    wait_start();
+    turn_off(GREEN_LED);
     printf("Start !\n");
 
     while(1){
-        qtr8rc_read_calibrated(&position);
-
-        compute_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
-
-        set_speed_left(motorLeftSpeed);
-        set_speed_right(motorRightSpeed);
+        qtr8rc_read_calibrated(&position, junctions);
+        if (junctions[0] | junctions[1]) {
+            set_speed_left(0);
+            set_speed_right(0);
+            stop = 1;
+        } else if (!stop) {
+            compute_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
+            set_speed_left(motorLeftSpeed);
+            set_speed_right(motorRightSpeed);
+        }
+        if ((GPIOA_IDR & (1 << SW_USER)) != 0) {
+            stop = 0;
+        }
     }
 }
