@@ -40,6 +40,7 @@ void i2c_receive(int size) {
         break;
       }
       regs[last_reg] = data;
+      
       Serial.print("Data ");
       Serial.println(data);
       last_reg = (last_reg + 1) & 0xF;

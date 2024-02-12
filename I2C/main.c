@@ -142,7 +142,8 @@ void i2c_config() {
  * @param data	Bytes to send.
  * @param size	Number of bytes to send.
  */
-void i2c_send(uint8_t addr, uint8_t *data, int size) {
+void 
+i2c_send(uint8_t addr, uint8_t *data, int size) {
 
 	// emit START bit
 	I2C1_CR1 |= I2C_CR1_ACK;
@@ -282,8 +283,11 @@ int main() {
 		/*int x = tsl2561_get_channel(0);
 		int y = tsl2561_get_channel(1);
 		printf("Channel 0: %05d, Channel 1: %05d\n", x, y);*/
-		int x = arduino_get_channel(0);
-		printf("Channel 0: %04x\n", x);
+		// int x = arduino_get_channel(0);
+		// printf("Channel 0: %04x\n", x);
+		uint8_t reg[2] = { 1, 0b0101};
+		i2c_send(ARDUINO_ADDR, reg , 2);
+
 		while((TIM4_SR & TIM_UIF) == 0);
 		TIM4_SR = 0;
 	}

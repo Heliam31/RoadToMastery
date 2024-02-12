@@ -34,12 +34,12 @@ void write(){
 
 void read(){
     //printf("ha");
-    while((USART1_SR & USART_SR_RXNE) == 0); 
+    while(!(USART1_SR & USART_SR_RXNE)); 
     //printf("USART1_SR = %d\n", USART1_SR);
     //for(int i=0; i < 2000000; i++);
         
     //printf("here");
-    int c =  USART1_DR;
+    int c =  (char)(USART1_DR & 0xFF);
     printf("%d\n",c);
         
 }
@@ -60,7 +60,7 @@ void uart_init1()
     GPIOA_MODER = REP_BITS(GPIOA_MODER, RX*2, 2, GPIO_MODER_ALT);
     GPIOA_AFRH = REP_BITS(GPIOA_AFRH, 2*4, 4, 7);
     //GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, RX*2 , 2, GPIO_PUPDR_PD);
-    GPIOA_OSPEEDR = REP_BITS(GPIOA_OSPEEDR, RX*2, 2, GPIO_OSPEEDR_HI);
+    //GPIOA_OSPEEDR = REP_BITS(GPIOA_OSPEEDR, RX*2, 2, GPIO_OSPEEDR_HI);
     //GPIOA_OTYPER |= (0<<RX);
     USART1_CR1 = 0;
     USART1_CR1 |= USART_CR1_TE | USART_CR1_RE;
@@ -70,8 +70,8 @@ void uart_init1()
     //USART1_BRR = APB1_CLK/38400;
     //USART1_BRR = (2734375/10000) << 4;
     //9600 bauds
-    USART1_BRR |= (273 << 4);
-    USART1_BRR |= 7; 
+    USART1_BRR |= (546 << 4);
+    USART1_BRR |= 14; 
     //115200 bauds
     //USART1_BRR |= (22 << 4);
     //USART1_BRR |= 13; 
