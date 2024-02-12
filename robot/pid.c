@@ -15,7 +15,7 @@ batLev: 75&100 (old Ki),        50&50
     Kd: 2 (old Ki)              2.69
 */
 
-#define Kp 0.039 // 0.069
+#define Kp 0.039 // 0.039 // 0.069
 #define Ki 0.001 // 0.007 / 0.6
 #define Kd 2.69 // 2.69
 #define REFERENCE 3500
@@ -77,6 +77,5 @@ void compute_motor_speed(int *motorLeftSpeed, int *motorRightSpeed, const int po
     *motorLeftSpeed = max(-13, min(*motorLeftSpeed, maxSpeedLeft));
     *motorRightSpeed = max(-13, min(*motorRightSpeed, maxSpeedRight));
 
-    // printf("%d: %d,%d \n",position, *motorLeftSpeed, *motorRightSpeed);
+    printf("%d: %d,%d \n",position, *motorLeftSpeed, *motorRightSpeed);
 }
-

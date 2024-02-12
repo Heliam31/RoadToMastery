@@ -270,6 +270,6 @@ void qtr8rc_read_calibrated(int* position) {
         sensorValues[i] = value;
     }
 
-    // _display_sensorValues(sensorValues);
+    _display_sensorValues(sensorValues);
     *position = compute_position(sensorValues);
 }

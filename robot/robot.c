@@ -22,6 +22,9 @@
 #define PERIOD (N*APB1_CLK)/PSC
 
 // UTILS 
+#define speedL 0
+#define speedR 0
+
 void _robot_delay(int cycles) {
     for(int i = 0; i < cycles; i++) NOP;
 }
@@ -107,7 +110,7 @@ int main(void) {
     set_speed_left(motorLeftSpeed);
     set_speed_right(-motorRightSpeed);
 
-    for (size_t i = 0; i < 50; i++)
+    for (size_t i = 0; i < 25; i++)
     {
         qtr8rc_calibrate();
         robot_wait_seconds(0.2);
@@ -136,7 +139,7 @@ int main(void) {
 
     while(1){
         qtr8rc_read_calibrated(&position);
-
+ 
         compute_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
 
         set_speed_left(motorLeftSpeed);
