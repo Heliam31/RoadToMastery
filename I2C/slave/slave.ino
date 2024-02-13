@@ -10,7 +10,12 @@ int cnt = 0;
 
 int slave_addr = 0x33;
 int last_reg = 0;
-int msg2send;
+int regs[16] = {
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0
+};
 
 #define CONTROL   0
 #define TIMING    1
@@ -19,26 +24,69 @@ int msg2send;
 #define DATA1LOW  0xE
 #define DATA1HIGH 0xF
 
+void print_instructions(String data){
+  if(data[0] == '1'){
+    Serial.println("Droite");
+  }
+  if(data[1] == '1'){
+    Serial.println("Gauche");
+  }
+  if(data[2] == '1'){
+    Serial.println("Avant");
+  }
+  if(data[3] == '1'){
+    Serial.println("Arrière");
+  }
+  if(data[4] == '1'){
+    Serial.println("Ligne d'arrivée");
+  }
+  if(data[5] == '1'){
+    Serial.println("Ligne de départ");
+  }
+  if(data[6] == '1'){
+    Serial.println("Obstacle");
+  }
+}
+
 void i2c_receive(int size) {
   Serial.print("Receive ");
   Serial.println(size);
   int cmd = Wire.read();
+  //if((cmd & 0x80) != 0) {
     size--;
+    // last_reg = cmd & 0xF;
+    // Serial.print("Write to ");
+    // Serial.println(last_reg);
     while(size > 0) {
       int data = Wire.read();
       if(data < 0) {
         Serial.println("Error!");
         break;
       }
-
-      Serial.print("Data: ");
+      Serial.print("Data ");
       Serial.println(data);
-      msg2send = data;
-      size--;
+      int remainder;
+      String binaryNumber = "";
 
-      BluetoothSend();
-    }
-  
+      // Convertir en binaire
+      while (data > 0) {
+        remainder = data % 2;
+        binaryNumber = String(remainder) + binaryNumber;
+        data = data / 2;
+      }
+
+      while (binaryNumber.length() < 7) {
+        binaryNumber = binaryNumber + "0";
+      }
+
+      // Afficher le résultat
+      Serial.print("Le nombre binaire est : ");
+      Serial.println(binaryNumber);
+
+      print_instructions(binaryNumber);
+      size--;
+    //}
+  }
 }
 
 uint8_t get_reg() {
@@ -54,21 +102,20 @@ uint8_t get_reg() {
 
 void i2c_request() {
   Serial.print("Request ");
-  
-  Serial.println(last_reg);
-  int x = get_reg();
-  Serial.print("Answer ");
-  Serial.println(x);
-  Wire.write(x);
-  x = get_reg();
-  Serial.print("Answer ");
-  Serial.println(x);
-  Wire.write(x);
+  // Serial.println(last_reg);
+  // int x = get_reg();
+  // Serial.print("Answer ");
+  // Serial.println(x);
+  Wire.write(1);
+  //x = get_reg();
+  // Serial.print("Answer ");
+  // Serial.println(x);
+  // Wire.write(x);
 }
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.println("Starting");
   Wire.begin(slave_addr);
   Wire.onReceive(i2c_receive);

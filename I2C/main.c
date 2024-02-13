@@ -188,22 +188,28 @@ void i2c_receive(uint8_t addr, uint8_t *data, int size) {
 	int x = I2C1_SR1;
 	x = I2C1_SR2;
 
-	// read data except last 1
-	while(size > 1) {
-		while((I2C1_SR1 & I2C_SR1_RXNE) == 0);
-		*data++ = I2C1_DR;
-		size--;
-		if(size > 1)
-			I2C1_CR1 = I2C_CR1_ACK;			
-	}
+	
+	// // read data except last 1
+	// while(size > 1) {
+	// 	while((I2C1_SR1 & I2C_SR1_RXNE) == 0);
+	// 	*data++ = I2C1_DR;
+	// 	printf("%d", *data);
+	// 	size--;
+	// 	if(size > 1)
+	// 		I2C1_CR1 = I2C_CR1_ACK;			
+	// }
+	// read last byte
+	while((I2C1_SR1 & I2C_SR1_RXNE) == 0);
+	*data = I2C1_DR;
+
+	printf("PARDON Hugo\n");
 
 	// clear ACK and stop I2C
 	I2C1_CR1 &= ~I2C_CR1_ACK;
 	I2C1_CR1 |= I2C_CR1_STOP;
 
-	// read last byte
-	while((I2C1_SR1 & I2C_SR1_RXNE) == 0);
-	*data++ = I2C1_DR;
+
+	printf("%d\n", *data);
 }
 
 
@@ -285,9 +291,10 @@ int main() {
 		printf("Channel 0: %05d, Channel 1: %05d\n", x, y);*/
 		// int x = arduino_get_channel(0);
 		// printf("Channel 0: %04x\n", x);
-		uint8_t reg[2] = { 1, 0b0101};
-		i2c_send(ARDUINO_ADDR, reg , 2);
-
+		uint8_t reg_send[2] = { 1, 0b0101}; //reg à send
+		uint8_t reg_receive[1] = {0}; //reg pour demander des données
+		i2c_send(ARDUINO_ADDR, reg_send , 2); //on send des données
+		i2c_receive(ARDUINO_ADDR, reg_receive, 1); //on demande des données
 		while((TIM4_SR & TIM_UIF) == 0);
 		TIM4_SR = 0;
 	}
