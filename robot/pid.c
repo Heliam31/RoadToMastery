@@ -74,8 +74,8 @@ void compute_motor_speed(int *motorLeftSpeed, int *motorRightSpeed, const int po
     *motorLeftSpeed = (baseSpeedLeft + motorSpeed);
     *motorRightSpeed = (baseSpeedRight - motorSpeed);
 
-    *motorLeftSpeed = max(-13, min(*motorLeftSpeed, maxSpeedLeft));
-    *motorRightSpeed = max(-13, min(*motorRightSpeed, maxSpeedRight));
+    *motorLeftSpeed = max(-8, min(*motorLeftSpeed, maxSpeedLeft));
+    *motorRightSpeed = max(-8, min(*motorRightSpeed, maxSpeedRight));
 
     // printf("%d: %d,%d \n",position, *motorLeftSpeed, *motorRightSpeed);
 }

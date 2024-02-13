@@ -1,17 +1,17 @@
-
 #include "pid.h"
 #include "qtr8rc.h"
 #include "motor_driver.h"
 #include "utils.h"
+#include "sonar.h"
 
 
 #define GREEN_LED 12
 #define BUTTON 0
 
 // TIMER POUR SYNC
-#define N 0.1
-#define PSC 128 // ->1s  // 8->0.01s
-#define PERIOD (N*APB1_CLK)/PSC
+// #define N 0.1
+// #define PSC 128 // ->1s  // 8->0.01s
+// #define PERIOD (N*APB1_CLK)/PSC
 
 // UTILS 
 void _robot_delay(int cycles) {
@@ -23,14 +23,14 @@ void robot_wait_seconds(float seconds) {
     _robot_delay(cycles);
 }
 
-void init_timer_sync(void) {
-    TIM2_CR1 = 0;
-	TIM2_PSC = PSC-1;
-	TIM2_ARR = PERIOD;
-	TIM2_EGR = TIM_UG;
-	TIM2_CR1 |= TIM_CEN | TIM_ARPE;
-	TIM2_SR = 0;
-}
+// void init_timer_sync(void) {
+//     TIM2_CR1 = 0;
+// 	TIM2_PSC = PSC-1;
+// 	TIM2_ARR = PERIOD;
+// 	TIM2_EGR = TIM_UG;
+// 	TIM2_CR1 |= TIM_CEN | TIM_ARPE;
+// 	TIM2_SR = 0;
+// }
 
 void init_gpio_led(void) {
 	GPIOD_MODER = REP_BITS(GPIOD_MODER, GREEN_LED*2, 2, GPIO_MODER_OUT);
@@ -43,19 +43,21 @@ void init_gpio_button(void) {
 }
 
 void init(void) {
-    init_timer_sync();
+    // init_timer_sync();
     init_gpio_led();
     init_gpio_button();
+
     qtr8rc_init();
     motor_init();
+    // sonar_init();
 }
 
 
 void calibrate(void) {
     printf("Calibrating...\n");
 
-    set_speed_left(-18);
-    set_speed_right(18);
+    set_speed_left(-27);
+    set_speed_right(27);
 
     for (size_t i = 0; i < 50; i++) {
         qtr8rc_calibrate();
@@ -90,8 +92,8 @@ int main(void) {
     
     int position = 0;
     int junctions[2] = {0};
-    int motorLeftSpeed = 27;
-    int motorRightSpeed = 22;
+    int motorLeftSpeed = 0;
+    int motorRightSpeed = 0;
 
     int stop = 0;
     
@@ -106,8 +108,11 @@ int main(void) {
     turn_off(GREEN_LED);
     printf("Start !\n");
 
+    unsigned int* distance = 0;
+
     while(1){
         qtr8rc_read_calibrated(&position, junctions);
+
         if (junctions[0] | junctions[1]) {
             set_speed_left(0);
             set_speed_right(0);
@@ -120,5 +125,7 @@ int main(void) {
         if ((GPIOA_IDR & (1 << SW_USER)) != 0) {
             stop = 0;
         }
+
+        // sonar_read(&distance);
     }
 }

@@ -237,7 +237,7 @@ void qtr8rc_read_line(int *sensorValues, int calibration_mode) {
     }
 
     // Disable the timer
-    TIM4_CR1 &= ~TIM_CEN;  
+    TIM4_CR1 &= ~TIM_CEN; 
 
     // Turn off IR LEDs
     GPIOD_BSRR = 1 << (ON_LED + 16);
