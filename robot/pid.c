@@ -57,7 +57,6 @@ int _compute_pid(const int position, const int error) {
 
 void compute_motor_speed(int *motorLeftSpeed, int *motorRightSpeed, const int position) {
     int error = REFERENCE - position;
-    // printf("error: %d\n",error);
     int motorSpeed = _compute_pid(position, error);
 
     *motorLeftSpeed = (baseSpeedLeft + motorSpeed);
@@ -68,6 +67,4 @@ void compute_motor_speed(int *motorLeftSpeed, int *motorRightSpeed, const int po
 
     *motorLeftSpeed = *motorLeftSpeed + maxSpeedLeft - (abs(error)/1000)*maxSpeedLeft + LEFT_MOTOR_OFFSET;
     *motorRightSpeed = *motorRightSpeed + maxSpeedRight - (abs(error)/1000)*maxSpeedRight + RIGHT_MOTOR_OFFSET;
-
-    // printf("%d: %d,%d \n",position, *motorLeftSpeed, *motorRightSpeed);
 }
