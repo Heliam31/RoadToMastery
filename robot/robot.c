@@ -49,7 +49,7 @@ void calibrate(void) {
     set_speed_left(-18);
     set_speed_right(18);
 
-    for (size_t i = 0; i < 50; i++) {
+    for (size_t i = 0; i < 25; i++) {
         qtr8rc_calibrate();
         robot_wait_seconds(0.2);
     }
@@ -88,7 +88,7 @@ void robot_move_on_line(Direction direction) {
     case RIGHT:
         set_speed_left(20);
         set_speed_right(-20);
-        for (int i = 0; i < 4; i++) sync();
+        for (int i = 0; i < 3; i++) sync();
         set_speed_left(0);
         set_speed_right(0);
         break;
@@ -104,9 +104,10 @@ int main(void) {
 	RCC_AHB1ENR |= RCC_GPIODEN;
 	RCC_AHB1ENR |= RCC_GPIOCEN;
 
-    RCC_APB1ENR |= RCC_TIM4EN;
-	RCC_APB1ENR |= RCC_TIM3EN;
 	RCC_APB1ENR |= RCC_TIM2EN;
+	RCC_APB1ENR |= RCC_TIM3EN;
+    RCC_APB1ENR |= RCC_TIM4EN;
+	RCC_APB1ENR |= RCC_TIM6EN;
 
     RCC_APB2ENR |= RCC_ADC1EN;
 
@@ -142,10 +143,13 @@ int main(void) {
             printf("BACK:%d;FRONT:%d;LEFT:%d;RIGHT:%d\n", junctions[0], junctions[1], junctions[2], junctions[3]);
 
             // attendre que les roues soient au niveau du croisement avant de stopper 
-            for (int i = 0; i < 7; i++) sync();
+            for (int i = 0; i < 3; i++) sync();
             // arrete des moteurs
             set_speed_left(0);
             set_speed_right(0);
+
+            printf("sync 20\n");
+            for (int i = 0; i < 20; i++) sync();
 
             // tmsg->data = junctions;
             // tmsg->size = 4;

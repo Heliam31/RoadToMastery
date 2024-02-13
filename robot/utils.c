@@ -78,17 +78,17 @@ int sign(int x) {
 // ==================== STM32 ====================
 // --------------- sync ---------------
 void init_timer_sync(void) {
-    TIM2_CR1 = 0;
-	TIM2_PSC = SYNC_PSC-1;
-	TIM2_ARR = SYNC_PERIOD;
-	TIM2_EGR = TIM_UG;
-	TIM2_CR1 |= TIM_CEN | TIM_ARPE;
-	TIM2_SR = 0;
+    TIM6_CR1 = 0;
+	TIM6_PSC = SYNC_PSC-1;
+	TIM6_ARR = SYNC_PERIOD;
+	TIM6_EGR = TIM_UG;
+	TIM6_CR1 |= TIM_CEN | TIM_ARPE;
+	TIM6_SR = 0;
 }
 
 void sync(void) {
-    while(((TIM2_SR & TIM_UIF) == 0)) NOP;
-	TIM2_SR &= ~TIM_UIF;
+    while(((TIM6_SR & TIM_UIF) == 0)) NOP;
+	TIM6_SR &= ~TIM_UIF;
     return;
 }
 

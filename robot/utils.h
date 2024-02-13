@@ -15,7 +15,7 @@
 // CONSTANTS & TYPES
 // =============== sync ===============
 #define SYNC_N 0.1
-#define SYNC_PSC 128 // ->1s  // 8->0.01s
+#define SYNC_PSC 8 // ->1s  // 8->0.01s
 #define SYNC_PERIOD (SYNC_N*APB1_CLK)/SYNC_PSC
 
 // =============== led & button ===============
