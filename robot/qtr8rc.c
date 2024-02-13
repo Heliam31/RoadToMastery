@@ -164,20 +164,19 @@ int compute_position(int *sensorValues) {
 ** @param[out] int *junctions : 
 */
 void check_junctions(int *sensorValues, int *position, int *junctions) {
-    int tab[NB_QTR_SENSORS] = {0};
-    int LEFT = 0;
-    int RIGHT = 1;
+    int sensors[NB_QTR_SENSORS] = {0};
 
     for (int i = 0; i < NB_QTR_SENSORS; i++) {
         if (sensorValues[i] == 1000) {
-            tab[i] = 1;
+            sensors[i] = 1;
         } else {
-            tab[i] = 0;
+            sensors[i] = 0;
         }
     }
 
-    junctions[RIGHT] = tab[0] & tab[1] & tab[2];
-    junctions[LEFT] = tab[5] & tab[6] & tab[7];
+    junctions[FRONT] = sensors[3] | sensors[4];
+    junctions[RIGHT] = sensors[0] & sensors[1] & sensors[2];
+    junctions[LEFT] = sensors[5] & sensors[6] & sensors[7];
 }
 
 /*
@@ -273,5 +272,4 @@ void qtr8rc_read_calibrated(int* position, int *junctions) {
     *position = compute_position(sensorValues);
     
     check_junctions(sensorValues, position, junctions);
-    // printf("[LEFT]:%d; [RIGHT]:%d\n", junctions[0],junctions[1]);
 }

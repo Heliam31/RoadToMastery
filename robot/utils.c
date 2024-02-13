@@ -1,6 +1,8 @@
 
 #include "utils.h"
 
+
+// ==================== MATH ====================
 /*
 ** @brief: Return the absolute value of x
 ** @param[in]: x: the number
@@ -71,12 +73,29 @@ int sign(int x) {
     return 0;
 }
 
+// ==================== COMM. ====================
 
 // ==================== STM32 ====================
+// --------------- sync ---------------
+void init_timer_sync(void) {
+    TIM2_CR1 = 0;
+	TIM2_PSC = SYNC_PSC-1;
+	TIM2_ARR = SYNC_PERIOD;
+	TIM2_EGR = TIM_UG;
+	TIM2_CR1 |= TIM_CEN | TIM_ARPE;
+	TIM2_SR = 0;
+}
+
 void sync(void) {
     while(((TIM2_SR & TIM_UIF) == 0)) NOP;
 	TIM2_SR &= ~TIM_UIF;
     return;
+}
+
+// --------------- led ---------------
+void init_gpio_led(void) {
+	GPIOD_MODER = REP_BITS(GPIOD_MODER, GREEN_LED*2, 2, GPIO_MODER_OUT);
+	GPIOD_OTYPER &= ~(1<<GREEN_LED);
 }
 
 void turn_on(int led) {
@@ -87,14 +106,40 @@ void turn_off(int led) {
     GPIOD_BSRR = 1 << (led + 16);
 }
 
+// --------------- button ---------------
+void init_gpio_button(void) {
+    GPIOA_MODER = REP_BITS(GPIOA_MODER, BUTTON*2, 2, GPIO_MODER_IN);
+	GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, BUTTON*2, 2, GPIO_PUPDR_PD);
+}
+
 /*
 ** @brief: Wait the pushed button 
 */
-void wait_start(void){
+void wait_button(void){
     int start = 0;
     while(!start) {
         if ((GPIOA_IDR & (1 << SW_USER)) != 0)  {
             start = 1;
         }
+    }
+}
+
+// --------------- direction ---------------
+void display_direction(Direction direction){
+    switch (direction) {
+    case BACK:
+        printf("Direction:BACK\n");
+        break;
+    case FRONT:
+        printf("Direction:FRONT\n");
+        break;            
+    case LEFT:
+        printf("Direction:LEFT\n");
+        break;
+    case RIGHT:
+        printf("Direction:RIGHT\n");
+        break;
+    default:
+        break;
     }
 }
