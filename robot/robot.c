@@ -78,7 +78,7 @@ void robot_stop() {
 
 void robot_follow_line() {
     qtr8rc_read_calibrated(&position, junctions);
-    if ((junctions[2] | junctions[3]) == 1) {
+    if ((junctions[3]) == 1) { // cond: junctions[2] | junctions[3]
         state = JONCTION;
     } else {
         compute_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
@@ -93,7 +93,7 @@ void robot_move_on_line() {
         led_turn_on(ORANGE_LED);
         set_speed_left(-16);
         set_speed_right(16);
-        for (int i=0; i < 40000000; i++) NOP;
+        for (int i=0; i < 40000000; i++) NOP; // TODO
         set_speed_left(0);
         set_speed_right(0);
         break;
@@ -104,7 +104,7 @@ void robot_move_on_line() {
         led_turn_on(RED_LED);
         set_speed_left(-16);
         set_speed_right(16);
-        for (int i=0; i < 20500000; i++) NOP;
+        for (int i=0; i < 20000000; i++) NOP; // TODO
         set_speed_left(0);
         set_speed_right(0);
         break;
@@ -112,7 +112,7 @@ void robot_move_on_line() {
         led_turn_on(GREEN_LED);
         set_speed_left(16);
         set_speed_right(-16);
-        for (int i=0; i < 20500000; i++) NOP;
+        for (int i=0; i < 20000000; i++) NOP; // TODO
         set_speed_left(0);
         set_speed_right(0);
         break;
@@ -212,7 +212,6 @@ int main(void) {
         //     break;
         // }
 
-        timer_reset();
         timer_enable();
     
         capteurs_read();
@@ -225,7 +224,7 @@ int main(void) {
             break;
         case JONCTION:
             robot_move_on_line();
-            state = STOP;
+            state = FOLLOW;
             break;
         case STOP:
             robot_stop();
