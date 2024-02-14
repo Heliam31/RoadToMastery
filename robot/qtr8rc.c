@@ -199,6 +199,8 @@ void qtr8rc_read_line(int *sensorValues, int calibration_mode) {
     // Make the I/O line an input (high impedance)
     gpiod_pin_in();
 
+    
+
     // Start the timer for the measure
     TIM4_CNT = 0;
     TIM4_CR1 = TIM_CEN;
@@ -207,6 +209,8 @@ void qtr8rc_read_line(int *sensorValues, int calibration_mode) {
     uint32_t startTime = TIM4_CNT;
     uint32_t elapsedTime = 0;
     uint32_t now = 0;
+
+    
 
     // Measure the time for the voltage to decay by waiting 
     // for the I/O line to go low

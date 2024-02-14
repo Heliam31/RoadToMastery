@@ -77,51 +77,61 @@ int sign(int x) {
 
 // ==================== STM32 ====================
 // --------------- sync ---------------
-void init_timer_sync(void) {
-    TIM6_CR1 = 0;
-	TIM6_PSC = SYNC_PSC-1;
-	TIM6_ARR = SYNC_PERIOD;
-	TIM6_EGR = TIM_UG;
-	TIM6_CR1 |= TIM_CEN | TIM_ARPE;
-	TIM6_SR = 0;
+void timer_init(void) {
+    TIM2_CR1 = 0;
+	TIM2_PSC = TIMER_PSC-1;
+	TIM2_ARR = TIMER_PERIOD;
+	TIM2_EGR = TIM_UG;
 }
 
-void sync(void) {
-    while(((TIM6_SR & TIM_UIF) == 0)) NOP;
-	TIM6_SR &= ~TIM_UIF;
+void timer_reset(void) {
+    TIM2_CR1 = 0;
+    TIM2_SR &= ~TIM_UIF;
+}
+
+void timer_enable(void) {
+    TIM2_CR1 |= TIM_CEN;
+    TIM2_SR &= ~TIM_UIF;
+}
+
+void timer_sync(void) {
+    while(((TIM2_SR & TIM_UIF) == 0)) NOP;
+	TIM2_SR &= ~TIM_UIF;
     return;
 }
 
 // --------------- led ---------------
-void init_gpio_led(void) {
-	GPIOD_MODER = REP_BITS(GPIOD_MODER, GREEN_LED*2, 2, GPIO_MODER_OUT);
-	GPIOD_OTYPER &= ~(1<<GREEN_LED);
+void led_init(int led) {
+	GPIOD_MODER = REP_BITS(GPIOD_MODER, led*2, 2, GPIO_MODER_OUT);
+	GPIOD_OTYPER &= ~(1<<led);
 }
 
-void turn_on(int led) {
+void led_turn_on(int led) {
     GPIOD_BSRR = 1 << led;
 }
 
-void turn_off(int led) {
+void led_turn_off(int led) {
     GPIOD_BSRR = 1 << (led + 16);
 }
 
+void led_clear_all(void) {
+    led_turn_off(GREEN_LED);
+    led_turn_off(ORANGE_LED);
+    led_turn_off(RED_LED);
+    led_turn_off(BLUE_LED);
+}
+
 // --------------- button ---------------
-void init_gpio_button(void) {
-    GPIOA_MODER = REP_BITS(GPIOA_MODER, BUTTON*2, 2, GPIO_MODER_IN);
-	GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, BUTTON*2, 2, GPIO_PUPDR_PD);
+void button_init(int button) {
+    GPIOA_MODER = REP_BITS(GPIOA_MODER, button*2, 2, GPIO_MODER_IN);
+	GPIOA_PUPDR = REP_BITS(GPIOA_PUPDR, button*2, 2, GPIO_PUPDR_PD);
 }
 
 /*
 ** @brief: Wait the pushed button 
 */
-void wait_button(void){
-    int start = 0;
-    while(!start) {
-        if ((GPIOA_IDR & (1 << SW_USER)) != 0)  {
-            start = 1;
-        }
-    }
+void button_wait(int button){
+    while((GPIOA_IDR & (1 << button)) == 0) NOP;
 }
 
 // --------------- direction ---------------

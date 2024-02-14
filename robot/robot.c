@@ -18,6 +18,7 @@ msg_t tmsg = {ESP32_ADDR, {0}, 8};
 msg_t rmsg = {ESP32_ADDR, {0}, 8};
 
 
+Direction direction = RIGHT;
 
 // UTILS 
 void _robot_delay(int cycles) {
@@ -31,18 +32,21 @@ void robot_wait_seconds(float seconds) {
 
 // INIT
 void init(void) {
-    init_timer_sync();
-    init_gpio_led();
-    init_gpio_button();
+    timer_init();
+    led_init(GREEN_LED);
+    led_init(ORANGE_LED);
+    led_init(RED_LED);
+    led_init(BLUE_LED);
+    button_init(BUTTON);
     qtr8rc_init();
     motor_init();
 }
 
 // MISC
 void calibrate(void) {
-    turn_on(GREEN_LED);
-    wait_button();
-    turn_off(GREEN_LED);
+    led_turn_on(GREEN_LED);
+    button_wait(BUTTON);
+    led_turn_off(GREEN_LED);
 
     printf("Calibrating...\n");
 
@@ -54,8 +58,8 @@ void calibrate(void) {
         robot_wait_seconds(0.2);
     }
 
-    display_calMinValues();
-    display_calMaxValues();
+    // display_calMinValues();
+    // display_calMaxValues();
 
     printf("Ready !\n");
 
@@ -66,8 +70,8 @@ void calibrate(void) {
 }
 
 void robot_stop() {
-    printf("Do nothing!\n");
     // arrete des moteurs
+    // printf("Do nothing!\n");
     set_speed_left(0);
     set_speed_right(0);
 }
@@ -83,28 +87,32 @@ void robot_follow_line() {
     }
 }
 
-void robot_move_on_line(Direction direction) {
+void robot_move_on_line() {
     switch (direction) {
     case BACK:
-        set_speed_left(-20);
-        set_speed_right(20);
-        for (int i=0; i < 4000; i++) sync();
+        led_turn_on(ORANGE_LED);
+        set_speed_left(-16);
+        set_speed_right(16);
+        for (int i=0; i < 40000000; i++) NOP;
         set_speed_left(0);
         set_speed_right(0);
         break;
     case FRONT:
-        break;            
-    case LEFT:        
-        set_speed_left(-20);
-        set_speed_right(20);
-        for (int i=0; i < 3000; i++) sync();
+        led_turn_on(BLUE_LED);
+        break;
+    case LEFT:
+        led_turn_on(RED_LED);
+        set_speed_left(-16);
+        set_speed_right(16);
+        for (int i=0; i < 20500000; i++) NOP;
         set_speed_left(0);
         set_speed_right(0);
         break;
     case RIGHT:
-        set_speed_left(20);
-        set_speed_right(-20);
-        for (int i=0; i < 3000; i++) sync();
+        led_turn_on(GREEN_LED);
+        set_speed_left(16);
+        set_speed_right(-16);
+        for (int i=0; i < 20500000; i++) NOP;
         set_speed_left(0);
         set_speed_right(0);
         break;
@@ -112,6 +120,12 @@ void robot_move_on_line(Direction direction) {
         break;
     }
 }
+
+void capteurs_read(void) {
+    
+    qtr8rc_read_calibrated(&position, junctions);
+        
+} 
 
 int main(void) {
     printf("\n\n\nInitialization...\n");
@@ -128,75 +142,100 @@ int main(void) {
     RCC_APB2ENR |= RCC_ADC1EN;
 
     init();
-
     calibrate();
 
-    turn_on(GREEN_LED);
-    wait_button();
-    turn_off(GREEN_LED);
+    led_turn_on(GREEN_LED);
+    button_wait(BUTTON);
+    led_turn_off(GREEN_LED);
     printf("Start !\n");
 
     junctions[BACK] = 1;
 
-    Direction direction = BACK; // decode_msg(rmsg);
     while(1){
+        // switch (state) {
+        // case FOLLOW:
+        //     robot_follow_line();
+        //     break;
+
+        // case JONCTION:
+        //     // verifie si il y a une ligne apres le croisement
+        //     // printf("Checking front...\n");
+        //     qtr8rc_read_calibrated(&position, junctions);
+        //     // printf("BACK:%d;FRONT:%d;LEFT:%d;RIGHT:%d\n", junctions[0], junctions[1], junctions[2], junctions[3]);
+
+        //     // attendre que les roues soient au niveau du croisement avant de stopper 
+        //     for (int i = 0; i < 200; i++) sync();
+            
+        //     // arrete des moteurs
+        //     set_speed_left(0);
+        //     set_speed_right(0);
+            
+        //     for (int i = 0; i < 1000; i++) sync();
+            
+        //     // tmsg->data = junctions;
+        //     // tmsg->size = 4;
+        //     // printf("Sending jucntions...\n");
+        //     // // envoyer les junctions detectees au serveur
+        //     // i2c_send(tmsg);
+        //     // printf("Jucntions sent, waiting direction...\n");
+        //     // // lire la direction a prendre pour continuer
+        //     // i2c_read(rmsg);
+        //     // Direction direction = RIGHT; // decode_msg(rmsg);
+        //     // if (direction == RIGHT) direction = LEFT;
+        //     // else if (direction == LEFT) direction = BACK;
+        //     // else if (direction == RIGHT) direction = RIGHT;
+        //     // direction = decode_msg(rmsg);
+
+        //     // deplacer le robot pour qu'il match avec la ligne selon la direction
+        //     // printf("Moving on the line...\n");
+        //     robot_move_on_line(direction);
+        //     // printf("Ready to follow the line !\n");
+
+        //     // printf("Stop motor\n");
+        //     set_speed_left(0);
+        //     set_speed_right(0);
+        //     // wait_button();
+
+        //     // clear junctions
+        //     // printf("Clear junctions\n");
+        //     junctions[LEFT] = 0;
+        //     junctions[RIGHT] = 0;
+            
+        //     // printf("Stop !\n");
+        //     state = FOLLOW;
+        //     break;
+        
+        // case STOP:
+        //     robot_stop();
+
+        // default:
+        //     break;
+        // }
+
+        timer_reset();
+        timer_enable();
+    
+        capteurs_read();
+
+        timer_sync();
+
         switch (state) {
         case FOLLOW:
             robot_follow_line();
             break;
-
         case JONCTION:
-            // verifie si il y a une ligne apres le croisement
-            printf("Checking front...\n");
-            qtr8rc_read_calibrated(&position, junctions);
-            printf("BACK:%d;FRONT:%d;LEFT:%d;RIGHT:%d\n", junctions[0], junctions[1], junctions[2], junctions[3]);
-
-            // attendre que les roues soient au niveau du croisement avant de stopper 
-            for (int i = 0; i < 200; i++) sync();
-            
-            // arrete des moteurs
-            set_speed_left(0);
-            set_speed_right(0);
-            
-            for (int i = 0; i < 1000; i++) sync();
-            
-            // tmsg->data = junctions;
-            // tmsg->size = 4;
-            // printf("Sending jucntions...\n");
-            // // envoyer les junctions detectees au serveur
-            // i2c_send(tmsg);
-            // printf("Jucntions sent, waiting direction...\n");
-            // // lire la direction a prendre pour continuer
-            // i2c_read(rmsg);
-            // Direction direction = RIGHT; // decode_msg(rmsg);
-            // if (direction == RIGHT) direction = LEFT;
-            // else if (direction == LEFT) direction = BACK;
-            // else if (direction == RIGHT) direction = RIGHT;
-
-            // deplacer le robot pour qu'il match avec la ligne selon la direction
-            printf("Moving on the line...\n");
-            robot_move_on_line(direction);
-            printf("Ready to follow the line !\n");
-
-            printf("Stop motor\n");
-            set_speed_left(0);
-            set_speed_right(0);
-            // wait_button();
-
-            // clear junctions
-            printf("Clear junctions\n");
-            junctions[LEFT] = 0;
-            junctions[RIGHT] = 0;
-            
-            printf("Stop !\n");
-            state = FOLLOW;
+            robot_move_on_line();
+            state = STOP;
             break;
-        
         case STOP:
             robot_stop();
-
+            button_wait(BUTTON);
+            state = FOLLOW;
+            break;
         default:
             break;
         }
+
+        timer_sync();
     }
 }

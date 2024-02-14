@@ -13,13 +13,16 @@
 
 
 // CONSTANTS & TYPES
-// =============== sync ===============
-#define SYNC_N 0.1
-#define SYNC_PSC 8 // ->1s  // 8->0.01s
-#define SYNC_PERIOD (SYNC_N*APB1_CLK)/SYNC_PSC
+// timer
+#define TEMPS_SEC 0.01
+#define TIMER_PSC 42
+#define TIMER_PERIOD (TEMPS_SEC*APB1_CLK)/TIMER_PSC;
 
 // =============== led & button ===============
-#define GREEN_LED 12
+#define GREEN_LED	12
+#define ORANGE_LED	13
+#define RED_LED		14
+#define BLUE_LED	15
 #define BUTTON 0
 
 // =============== states & directions ===============
@@ -47,15 +50,18 @@ int sign(int x);
 // =============== comm. ===============
 
 // =============== stm32 ===============
-void init_timer_sync(void);
-void sync(void);
+void timer_init(void);
+void timer_reset(void);
+void timer_enable(void);
+void timer_sync(void);
 
-void init_gpio_led(void);
-void turn_on(int led);
-void turn_off(int led);
+void led_init(int led);
+void led_turn_on(int led);
+void led_turn_off(int led);
+void led_clear_all(void);
 
-void init_gpio_button(void);
-void wait_button(void);
+void button_init(int button);
+void button_wait(int button);
 
 void display_direction(Direction direction);
 
