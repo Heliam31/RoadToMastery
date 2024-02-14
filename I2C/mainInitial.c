@@ -2,12 +2,8 @@
 #include <tinyprintf.h>
 #include <stm32f4/rcc.h>
 #include <stm32f4/gpio.h>
-#include <stm32f4/nvic.h>
-#include <stm32f4/exti.h>
-#include <stm32f4/syscfg.h>
 #include <stm32f4/tim.h>
 #include <stm32f4/i2c.h>
-#include <stm32f4/adc.h>
 
 #define OPEN_DRAIN
 //#define NOPULLUP
@@ -136,26 +132,26 @@ void i2c_config() {
 	I2C1_CR1 |= I2C_CR1_PE;
 }
 
+
 /**
  * Send a message over I2C1.
  * @param addr	Target address.
  * @param data	Bytes to send.
  * @param size	Number of bytes to send.
  */
-void 
-i2c_send(uint8_t addr, uint8_t *data, int size) {
+void i2c_send(uint8_t addr, uint8_t *data, int size) {
 
 	// emit START bit
 	I2C1_CR1 |= I2C_CR1_ACK;
 	I2C1_CR1 |= I2C_CR1_START;
 	while((I2C1_SR1 & I2C_SR1_SB) == 0);
-
+	
 	// emit address
 	I2C1_DR = addr << 1;
 	while((I2C1_SR1 & I2C_SR1_ADDR) == 0);
 	int x = I2C1_SR1;
 	x = I2C1_SR2;
-
+	printf("addr");
 	// write data
 	while(size != 0) {
 		while((I2C1_SR1 & I2C_SR1_TXE) == 0);
@@ -176,8 +172,7 @@ i2c_send(uint8_t addr, uint8_t *data, int size) {
  * @param size	Expected data size.
  */
 void i2c_receive(uint8_t addr, uint8_t *data, int size) {
-
-	// emit START bit
+// emit START bit
 	I2C1_CR1 |= I2C_CR1_ACK;
 	I2C1_CR1 |= I2C_CR1_START;
 	while((I2C1_SR1 & I2C_SR1_SB) == 0);
@@ -188,27 +183,22 @@ void i2c_receive(uint8_t addr, uint8_t *data, int size) {
 	int x = I2C1_SR1;
 	x = I2C1_SR2;
 
-	
-	// // read data except last 1
-	// while(size > 1) {
-	// 	while((I2C1_SR1 & I2C_SR1_RXNE) == 0);
-	// 	*data++ = I2C1_DR;
-	// 	printf("%d", *data);
-	// 	size--;
-	// 	if(size > 1)
-	// 		I2C1_CR1 = I2C_CR1_ACK;			
-	// }
-	// read last byte
-	while((I2C1_SR1 & I2C_SR1_RXNE) == 0);
-	*data = I2C1_DR;
-
+	// read data except last 1
+	while(size > 1) {
+		while((I2C1_SR1 & I2C_SR1_RXNE) == 0);
+		*data++ = I2C1_DR;
+		size--;
+		if(size > 1)
+			I2C1_CR1 = I2C_CR1_ACK;			
+	}
 
 	// clear ACK and stop I2C
 	I2C1_CR1 &= ~I2C_CR1_ACK;
 	I2C1_CR1 |= I2C_CR1_STOP;
 
-
-	printf("%d\n", *data);
+	// read last byte
+	while((I2C1_SR1 & I2C_SR1_RXNE) == 0);
+	*data++ = I2C1_DR;
 }
 
 
@@ -288,15 +278,10 @@ int main() {
 		/*int x = tsl2561_get_channel(0);
 		int y = tsl2561_get_channel(1);
 		printf("Channel 0: %05d, Channel 1: %05d\n", x, y);*/
-		// int x = arduino_get_channel(0);
-		// printf("Channel 0: %04x\n", x);
-		uint8_t reg_send[2] = { 0b1010, 0b1101}; //reg à send
-		uint8_t reg_receive[2] = {0}; //reg pour demander des données
-		i2c_send(ARDUINO_ADDR, reg_send , 2); //on send des données
-		i2c_receive(ARDUINO_ADDR, reg_receive, 2); //on demande des données
+		int x = arduino_get_channel(0);
+		printf("Channel 0: %04x\n", x);
 		while((TIM4_SR & TIM_UIF) == 0);
 		TIM4_SR = 0;
 	}
 	while(1);
 }
-

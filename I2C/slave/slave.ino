@@ -89,6 +89,7 @@ void i2c_receive(int size) {
   }
 }
 
+
 uint8_t get_reg() {
   int i = last_reg;
   last_reg = (last_reg + 1) & 0xF;
