@@ -3,11 +3,6 @@
 #define __PID_H__
 
 
-int abs(int x);
-int min(int x, int y);
-int max(int x, int y);
-
-int _compute_pid(const int position, const int error);
-void compute_motor_speed(int *motorLeftSpeed, int *motorRightSpeed, const int position);
+void pid_compute_speeds(int *motorLeftSpeed, int *motorRightSpeed, const int *position);
 
 #endif

@@ -10,3 +10,4 @@ robot/tmp/*.log
 robot/tmp/.vscode
 
 .vscode
+.nfs*

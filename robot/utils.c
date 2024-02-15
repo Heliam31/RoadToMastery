@@ -77,27 +77,28 @@ int sign(int x) {
 
 // ==================== STM32 ====================
 // --------------- sync ---------------
-void timer_init(void) {
-    TIM2_CR1 = 0;
-	TIM2_PSC = TIMER_PSC-1;
-	TIM2_ARR = TIMER_PERIOD;
-	TIM2_EGR = TIM_UG;
+/*
+**  @brief: Configure TIM6 to generate a delay in microsecond
+**  @param: None
+**  @return: None
+*/
+void init_tim6(void) {
+    TIM6_CR1 &= ~TIM_CEN; // Stop the timer
+    TIM6_PSC = PSC_42000-1; // 1kHz -> 1000 ticks per second -> 1 tick = 1ms
+    TIM6_SR &= ~TIM_UIF; // Clear the update event flag
 }
 
-void timer_reset(void) {
-    TIM2_CR1 = 0;
-    TIM2_SR &= ~TIM_UIF;
-}
-
-void timer_enable(void) {
-    TIM2_CR1 |= TIM_CEN;
-    TIM2_SR &= ~TIM_UIF;
-}
-
-void timer_sync(void) {
-    while(((TIM2_SR & TIM_UIF) == 0)) NOP;
-	TIM2_SR &= ~TIM_UIF;
-    return;
+/*
+**  @brief: Delay the program for a given number of millisecond
+**  @param: us[in]: the number of millisecond to wait
+**  @return: None
+*/
+void delay_ms(int us) {
+    TIM6_SR &= ~TIM_UIF; // Clear the update event flag
+    TIM6_ARR = (us*APB1_CLK)/PSC_42000; // Set the auto-reload value
+    TIM6_CR1 = TIM_CEN; // Start the timer
+    while((TIM6_SR & TIM_UIF) == 0) NOP; // Wait for the update event
+    TIM6_CR1 &= ~TIM_CEN; // Stop the timer
 }
 
 // --------------- led ---------------
@@ -151,5 +152,13 @@ void display_direction(Direction direction){
         break;
     default:
         break;
+    }
+}
+
+
+// ==================== MISC ====================
+void set_tab(int *tab, int size, int value) {
+    for (int i = 0; i < size; i++) {
+        tab[i] = value;
     }
 }

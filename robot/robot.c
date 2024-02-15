@@ -1,4 +1,3 @@
-
 #include "pid.h"
 #include "qtr8rc.h"
 #include "motor_driver.h"
@@ -6,29 +5,6 @@
 
 
 // GLOBALS
-int position = 0;
-int junctions[4] = {0};
-int motorLeftSpeed = 25;
-int motorRightSpeed = 25;
-
-int stop = 0;
-State state = FOLLOW;
-
-msg_t tmsg = {ESP32_ADDR, {0}, 8};
-msg_t rmsg = {ESP32_ADDR, {0}, 8};
-
-
-Direction direction = RIGHT;
-
-// UTILS 
-void _robot_delay(int cycles) {
-    for(int i = 0; i < cycles; i++) NOP;
-}
-
-void robot_wait_seconds(float seconds) {
-    int cycles = seconds*APB1_CLK;
-    _robot_delay(cycles);
-}
 
 // INIT
 void init(void) {
@@ -42,94 +18,62 @@ void init(void) {
     motor_init();
 }
 
-// MISC
-void calibrate(void) {
-    led_turn_on(GREEN_LED);
-    button_wait(BUTTON);
-    led_turn_off(GREEN_LED);
-
-    printf("Calibrating...\n");
-
-    set_speed_left(-18);
-    set_speed_right(18);
-
-    for (size_t i = 0; i < 25; i++) {
-        qtr8rc_calibrate();
-        robot_wait_seconds(0.2);
-    }
-
-    // display_calMinValues();
-    // display_calMaxValues();
-
-    printf("Ready !\n");
-
-    set_speed_left(0);
-    set_speed_right(0);
-
-    robot_wait_seconds(1);
-}
-
-void robot_stop() {
-    // arrete des moteurs
-    // printf("Do nothing!\n");
-    set_speed_left(0);
-    set_speed_right(0);
-}
-
-void robot_follow_line() {
-    qtr8rc_read_calibrated(&position, junctions);
-    if ((junctions[3]) == 1) { // cond: junctions[2] | junctions[3]
-        state = JONCTION;
-    } else {
-        compute_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
-        set_speed_left(motorLeftSpeed);
-        set_speed_right(motorRightSpeed);
-    }
-}
-
-void robot_move_on_line() {
-    switch (direction) {
+void move_on_line(Direction *direction) {
+    switch (*direction) {
     case BACK:
         led_turn_on(ORANGE_LED);
         set_speed_left(-16);
         set_speed_right(16);
-        for (int i=0; i < 40000000; i++) NOP; // TODO
-        set_speed_left(0);
-        set_speed_right(0);
         break;
     case FRONT:
         led_turn_on(BLUE_LED);
+        set_speed_left(16);
+        set_speed_right(16);
         break;
     case LEFT:
         led_turn_on(RED_LED);
         set_speed_left(-16);
         set_speed_right(16);
-        for (int i=0; i < 20000000; i++) NOP; // TODO
-        set_speed_left(0);
-        set_speed_right(0);
         break;
     case RIGHT:
         led_turn_on(GREEN_LED);
         set_speed_left(16);
         set_speed_right(-16);
-        for (int i=0; i < 20000000; i++) NOP; // TODO
-        set_speed_left(0);
-        set_speed_right(0);
         break;
     default:
         break;
     }
 }
 
-void capteurs_read(void) {
-    
-    qtr8rc_read_calibrated(&position, junctions);
-        
-} 
+int on_road(Direction *direction, int *irValues) {
+    switch (*direction) {
+    case BACK:
+        if (irValues[0] > 1000 && irValues[1] > 1000) {
+            return 1;
+        }
+        break;
+    case FRONT:
+        if (irValues[6] > 1000 && irValues[7] > 1000) {
+            return 1;
+        }
+        break;
+    case LEFT:
+        if (irValues[0] > 1000 && irValues[7] > 1000) {
+            return 1;
+        }
+        break;
+    case RIGHT:
+        if (irValues[6] > 1000 && irValues[1] > 1000) {
+            return 1;
+        }
+        break;
+    default:
+        break;
+    }
+    return 0;
+}
 
-int main(void) {
-    printf("\n\n\nInitialization...\n");
-
+void enable_clk(void) {
     RCC_AHB1ENR |= RCC_GPIOAEN;
 	RCC_AHB1ENR |= RCC_GPIODEN;
 	RCC_AHB1ENR |= RCC_GPIOCEN;
@@ -140,101 +84,176 @@ int main(void) {
 	RCC_APB1ENR |= RCC_TIM6EN;
 
     RCC_APB2ENR |= RCC_ADC1EN;
+}
 
+void init(void) {
+    qtr8rc_init();
+    motor_init();
+    
+    init_tim6();
+    led_init(GREEN_LED);
+    led_init(ORANGE_LED);
+    led_init(RED_LED);
+    led_init(BLUE_LED);
+    button_init(BUTTON);
+}
+
+void calibration(void) {
+    led_turn_on(GREEN_LED);
+    button_wait(BUTTON);
+    led_turn_off(GREEN_LED);
+
+    printf("Calibrating...\n");
+
+    motor_set_speeds(-18, 18);
+
+    for (size_t i = 0; i < 25; i++) {
+        qtr8rc_calibrate();
+        delay_ms(20);
+    }
+
+    printf("Ready !\n");
+
+    motor_set_speeds(0, 0);
+    delay_ms(1000); // 1s
+}
+
+int main (void) {
+    enable_clk();
     init();
-    calibrate();
+    calibration();
+
+    int irValues [8] = {0};
+    int sonarValue = 0;
+
+    int roads [4] = {0};
+    int position = 0;
+
+    int leftSpeed = 0;
+    int rightSpeed = 0;
+
+    msg_t *tmsg = {ESP32_ADDR, {0}, 8};
+    msg_t *rmsg = {ESP32_ADDR, {0}, 8};
+
+    State state = FOLLOW;
+    Direction direction = FRONT;
+    roads[BACK] = 1;
 
     led_turn_on(GREEN_LED);
     button_wait(BUTTON);
     led_turn_off(GREEN_LED);
-    printf("Start !\n");
-
-    junctions[BACK] = 1;
-
-    while(1){
-        // switch (state) {
-        // case FOLLOW:
-        //     robot_follow_line();
-        //     break;
-
-        // case JONCTION:
-        //     // verifie si il y a une ligne apres le croisement
-        //     // printf("Checking front...\n");
-        //     qtr8rc_read_calibrated(&position, junctions);
-        //     // printf("BACK:%d;FRONT:%d;LEFT:%d;RIGHT:%d\n", junctions[0], junctions[1], junctions[2], junctions[3]);
-
-        //     // attendre que les roues soient au niveau du croisement avant de stopper 
-        //     for (int i = 0; i < 200; i++) sync();
-            
-        //     // arrete des moteurs
-        //     set_speed_left(0);
-        //     set_speed_right(0);
-            
-        //     for (int i = 0; i < 1000; i++) sync();
-            
-        //     // tmsg->data = junctions;
-        //     // tmsg->size = 4;
-        //     // printf("Sending jucntions...\n");
-        //     // // envoyer les junctions detectees au serveur
-        //     // i2c_send(tmsg);
-        //     // printf("Jucntions sent, waiting direction...\n");
-        //     // // lire la direction a prendre pour continuer
-        //     // i2c_read(rmsg);
-        //     // Direction direction = RIGHT; // decode_msg(rmsg);
-        //     // if (direction == RIGHT) direction = LEFT;
-        //     // else if (direction == LEFT) direction = BACK;
-        //     // else if (direction == RIGHT) direction = RIGHT;
-        //     // direction = decode_msg(rmsg);
-
-        //     // deplacer le robot pour qu'il match avec la ligne selon la direction
-        //     // printf("Moving on the line...\n");
-        //     robot_move_on_line(direction);
-        //     // printf("Ready to follow the line !\n");
-
-        //     // printf("Stop motor\n");
-        //     set_speed_left(0);
-        //     set_speed_right(0);
-        //     // wait_button();
-
-        //     // clear junctions
-        //     // printf("Clear junctions\n");
-        //     junctions[LEFT] = 0;
-        //     junctions[RIGHT] = 0;
-            
-        //     // printf("Stop !\n");
-        //     state = FOLLOW;
-        //     break;
+    while(1) {
+        start_timer(); // TODO
         
-        // case STOP:
-        //     robot_stop();
+        qtr8rc_read(&irValues, OFF);
+        read_sonar(&sonarValue); // TODO ???
+        
+        delay_ms(1);
+        
+        switch(state) {
+            case FOLLOW:
+                get_avaible_roads(&roads, &irValues);
+                if (on_junction(&roads) == 1) { // TODO
+                    state = STOP;
+                    leftSpeed = 0;
+                    rightSpeed = 0;
+                    for (int i = 0; i < 4; i++) {
+                        tmsg->data[i] = roads[i];
+                    }
+                } else {
+                    compute_position(&position, &irValues);
+                    pid_compute_speeds(&leftSpeed, &rightSpeed, &position);
+                }
+                break;
+            
+            case STOP:
+                leftSpeed = 0;
+                rightSpeed = 0;
+                i2c_send(tmsg); // TODO ???
+                i2c_receive(rmsg); // TODO ??? 
+                get_direction(&direction, rmsg); // TODO
+                if (direction == FRONT) {
+                    state = FOLLOW;
+                } else {
+                    state = TURN;
+                }
+                break;
+            
+            case TURN:
+                move_on_line(&direction);
+                if (direction == LEFT) {
+                    state = S_LEFT;
+                } else if (direction == RIGHT) {
+                    state = S_RIGHT;
+                } else {
+                    state = S_BACK;
+                }
+                break;
 
-        // default:
-        //     break;
-        // }
-
-        timer_enable();
-    
-        capteurs_read();
-
-        timer_sync();
-
-        switch (state) {
-        case FOLLOW:
-            robot_follow_line();
-            break;
-        case JONCTION:
-            robot_move_on_line();
-            state = FOLLOW;
-            break;
-        case STOP:
-            robot_stop();
-            button_wait(BUTTON);
-            state = FOLLOW;
-            break;
-        default:
-            break;
+            case S_LEFT:
+                if (irValues[0] == 1) {
+                    state = CHECK2;
+                }
+                break;
+            
+            case S_RIGHT:
+                if (irValues[7] == 1) {
+                    state = CHECK7;
+                }
+                break;
+            
+            case S_BACK:
+                if (direction != RIGHT) {
+                    state = S_RIGHT;
+                } else if (irValues[7] == 1) {
+                    state = CHECK8_WHITE;
+                }
+                break;
+            
+            case CHECK2:
+                if (irValues[1] == 1) {
+                    state = CHECK3;
+                }
+                break;
+            
+            case CHECK3:
+                if (irValues[2] == 1) {
+                    state = CHECK4;
+                }
+                break;
+            
+            case CHECK4:
+                if (irValues[3] == 1) {
+                    state = FOLLOW;
+                }
+                break;
+            
+            case CHECK5:
+                if (irValues[4] == 1) {
+                    state = FOLLOW;
+                }
+                break;
+            
+            case CHECK6:
+                if (irValues[5] == 1) {
+                    state = CHECK5;
+                }
+                break;
+            
+            case CHECK7:
+                if (irValues[6] == 1) {
+                    state = CHECK6;
+                }
+                break;
+            
+            case CHECK8_WHITE:
+                if (irValues[7] == 0) {
+                    state = S_RIGHT;
+                }
+                break;
         }
-
-        timer_sync();
+        set_speeds(&leftSpeed, &rightSpeed);
+     
+        sync(); // TODO
     }
 }

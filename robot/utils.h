@@ -14,9 +14,7 @@
 
 // CONSTANTS & TYPES
 // timer
-#define TEMPS_SEC 0.01
-#define TIMER_PSC 42
-#define TIMER_PERIOD (TEMPS_SEC*APB1_CLK)/TIMER_PSC;
+#define PSC_42000 42000
 
 // =============== led & button ===============
 #define GREEN_LED	12
@@ -26,7 +24,12 @@
 #define BUTTON 0
 
 // =============== states & directions ===============
-typedef enum state_e {FOLLOW, JONCTION, STOP} State;
+typedef enum calibration_e {ON, OFF} Calibration;
+typedef enum state_e {
+    FOLLOW, STOP, TURN, // main states
+    S_LEFT, S_RIGHT, S_BACK,  // sub states
+    CHECK2, CHECK3, CHECK4, CHECK5, CHECK6, CHECK7, CHECK8_WHITE // subsub states
+} State;
 typedef enum direction_e {FRONT, BACK, LEFT, RIGHT} Direction;
 
 // =============== i2c ===============
@@ -50,10 +53,8 @@ int sign(int x);
 // =============== comm. ===============
 
 // =============== stm32 ===============
-void timer_init(void);
-void timer_reset(void);
-void timer_enable(void);
-void timer_sync(void);
+void init_tim6(void);
+void delay_ms(int ms);
 
 void led_init(int led);
 void led_turn_on(int led);
@@ -64,5 +65,9 @@ void button_init(int button);
 void button_wait(int button);
 
 void display_direction(Direction direction);
+
+// =============== misc ===============
+void set_tab(int *tab, int size, int value);
+
 
 #endif

@@ -1,13 +1,3 @@
-#include <stdlib.h>
-#include <tinyprintf.h>
-#include <stm32f4/rcc.h>
-#include <stm32f4/gpio.h>
-#include <stm32f4/nvic.h>
-#include <stm32f4/exti.h>
-#include <stm32f4/syscfg.h>
-#include <stm32f4/tim.h>
-#include <stm32f4/adc.h>
-
 #include "motor_driver.h"
 #include "utils.h"
 
