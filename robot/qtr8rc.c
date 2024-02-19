@@ -22,10 +22,10 @@ const int IR_LEDS[8] = {IR1_LED, IR2_LED, IR3_LED, IR4_LED, IR5_LED, IR6_LED, IR
 #define T 0.0025
 #define WAIT_PSC 2
 #define WAIT_qtr8rc_delay (T*APB1_CLK)/WAIT_PSC
-const int PERIOD = WAIT_qtr8rc_delay;
+const int qtr8rcPeriod = WAIT_qtr8rc_delay;
 
 // SENSOR VALUES
-const int _maxValue = PERIOD;
+const int _maxValue = qtr8rcPeriod;
 int calMaxValues[NB_QTR_SENSORS] = {0};
 int calMinValues[NB_QTR_SENSORS] = {0};
 uint16_t _lastPosition = 0;
@@ -102,7 +102,7 @@ void init_gpio_qtr8rc() {
 void init_tim4_qtr8rc(){
 	TIM4_CR1 = 0;
 	TIM4_PSC = WAIT_PSC-1;
-	TIM4_ARR = PERIOD;
+	TIM4_ARR = qtr8rcPeriod;
 	TIM4_EGR = TIM_UG;
 	TIM4_SR = 0;
 	TIM4_CR1 = TIM_CEN;
@@ -210,16 +210,16 @@ void qtr8rc_read_line(int *sensorValues, int calibration_mode) {
     TIM4_CR1 = TIM_CEN;
     TIM4_SR = 0;
 
-    uint32_t startTime = TIM4_CNT;
+    uint32_t qtr8rcStartTime = TIM4_CNT;
     uint32_t elapsedTime = 0;
-    uint32_t now = 0;
+    uint32_t qtr8rcNow = 0;
 
     // Measure the time for the voltage to decay by waiting 
     // for the I/O line to go low
-    while (((now=TIM4_CNT) + elapsedTime) < _maxValue) {
+    while (((qtr8rcNow=TIM4_CNT) + elapsedTime) < _maxValue) {
 
-        // Calcule time at each iteration
-        elapsedTime = now - startTime;
+        // Compute time at each iteration
+        elapsedTime = qtr8rcNow - qtr8rcStartTime;
 
         // Compute each led's value
         for (unsigned int i = 0; i < NB_QTR_SENSORS; i++) {
@@ -272,9 +272,12 @@ void qtr8rc_calibrate(void) {
 
 void qtr8rc_read_calibrated(int* position, int *junctions) {
     int sensorValues[NB_QTR_SENSORS] = {_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue,_maxValue};
-   
+//    printf("%d | %d\n",sonar_read_flag, ir_read_flag);
+    // while (sonar_read_flag);
+    // ir_read_flag = 1;
     qtr8rc_read_line(sensorValues,0);
     qtr8rc_normalize(sensorValues);
+    // ir_read_flag = 0;
     *position = compute_position(sensorValues);
     
     check_junctions(sensorValues, position, junctions);

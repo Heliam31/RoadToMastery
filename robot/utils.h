@@ -22,4 +22,8 @@ void turn_on(int led);
 void turn_off(int led);
 void wait_start(void);
 
+
+// int* sonar_read_flag = 0;
+// int* ir_read_flag = 0;
+
 #endif
