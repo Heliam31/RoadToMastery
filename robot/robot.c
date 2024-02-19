@@ -11,6 +11,7 @@
 #include "qtr8rc.h"
 #include "motor_driver.h"
 #include "utils.h"
+#include "i2c.h"
 
 // DEBUG (GPIO)
 #define GREEN_LED 12
