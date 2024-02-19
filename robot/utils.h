@@ -15,6 +15,7 @@
 // CONSTANTS & TYPES
 // timer
 #define PSC_42000 42000
+#define PSC_42 42
 
 // =============== led & button ===============
 #define GREEN_LED	12
@@ -55,6 +56,8 @@ int sign(int x);
 // =============== stm32 ===============
 void init_tim6(void);
 void delay_ms(int ms);
+void delay_us(int us);
+void sync(void);
 
 void led_init(int led);
 void led_turn_on(int led);

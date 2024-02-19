@@ -7,15 +7,55 @@
 // GLOBALS
 
 // INIT
+void enable_clk(void) {
+    RCC_AHB1ENR |= RCC_GPIOAEN;
+	RCC_AHB1ENR |= RCC_GPIODEN;
+	RCC_AHB1ENR |= RCC_GPIOCEN;
+
+	RCC_APB1ENR |= RCC_TIM2EN;
+	RCC_APB1ENR |= RCC_TIM3EN;
+    RCC_APB1ENR |= RCC_TIM4EN;
+	RCC_APB1ENR |= RCC_TIM6EN;
+
+    RCC_APB2ENR |= RCC_ADC1EN;
+}
+
 void init(void) {
-    timer_init();
+    qtr8rc_init();
+    motor_init();
+    
+    init_tim6();
     led_init(GREEN_LED);
     led_init(ORANGE_LED);
     led_init(RED_LED);
     led_init(BLUE_LED);
     button_init(BUTTON);
-    qtr8rc_init();
-    motor_init();
+}
+
+void calibration(void) {
+    led_turn_on(GREEN_LED);
+    button_wait(BUTTON);
+    led_turn_off(GREEN_LED);
+
+    display_calMinValues();
+    display_calMaxValues();
+
+    printf("Calibrating...\n");
+
+    motor_set_speeds(-25, 25);
+
+    for (int i = 0; i < 10; i++) {
+        qtr8rc_calibrate();
+        delay_ms(1000);
+    }
+
+    display_calMinValues();
+    display_calMaxValues();
+
+    printf("Ready !\n");
+
+    motor_set_speeds(0, 0);
+    // delay_ms(1000); // 1s
 }
 
 void move_on_line(Direction *direction) {
@@ -73,50 +113,10 @@ int on_road(Direction *direction, int *irValues) {
     return 0;
 }
 
-void enable_clk(void) {
-    RCC_AHB1ENR |= RCC_GPIOAEN;
-	RCC_AHB1ENR |= RCC_GPIODEN;
-	RCC_AHB1ENR |= RCC_GPIOCEN;
-
-	RCC_APB1ENR |= RCC_TIM2EN;
-	RCC_APB1ENR |= RCC_TIM3EN;
-    RCC_APB1ENR |= RCC_TIM4EN;
-	RCC_APB1ENR |= RCC_TIM6EN;
-
-    RCC_APB2ENR |= RCC_ADC1EN;
+int on_junction(int *roads){
+    return roads[LEFT] | roads[RIGHT]; 
 }
 
-void init(void) {
-    qtr8rc_init();
-    motor_init();
-    
-    init_tim6();
-    led_init(GREEN_LED);
-    led_init(ORANGE_LED);
-    led_init(RED_LED);
-    led_init(BLUE_LED);
-    button_init(BUTTON);
-}
-
-void calibration(void) {
-    led_turn_on(GREEN_LED);
-    button_wait(BUTTON);
-    led_turn_off(GREEN_LED);
-
-    printf("Calibrating...\n");
-
-    motor_set_speeds(-18, 18);
-
-    for (size_t i = 0; i < 25; i++) {
-        qtr8rc_calibrate();
-        delay_ms(20);
-    }
-
-    printf("Ready !\n");
-
-    motor_set_speeds(0, 0);
-    delay_ms(1000); // 1s
-}
 
 int main (void) {
     enable_clk();
@@ -124,6 +124,7 @@ int main (void) {
     calibration();
 
     int irValues [8] = {0};
+    set_tab(irValues, 8, 52500);
     int sonarValue = 0;
 
     int roads [4] = {0};
@@ -143,17 +144,19 @@ int main (void) {
     button_wait(BUTTON);
     led_turn_off(GREEN_LED);
     while(1) {
-        start_timer(); // TODO
+        // start_timer(); // TODO
         
-        qtr8rc_read(&irValues, OFF);
-        read_sonar(&sonarValue); // TODO ???
+        qtr8rc_read(irValues, OFF);
+        // sonar_read(&sonarValue); // TODO ???
+        display_irValues(irValues);
         
-        delay_ms(1);
+        delay_ms(10);
         
         switch(state) {
             case FOLLOW:
-                get_avaible_roads(&roads, &irValues);
-                if (on_junction(&roads) == 1) { // TODO
+                set_tab(roads, 4, 0);
+                get_avaible_roads(roads, irValues);
+                if (on_junction(roads) == 1) {
                     state = STOP;
                     leftSpeed = 0;
                     rightSpeed = 0;
@@ -161,17 +164,18 @@ int main (void) {
                         tmsg->data[i] = roads[i];
                     }
                 } else {
-                    compute_position(&position, &irValues);
-                    pid_compute_speeds(&leftSpeed, &rightSpeed, &position);
+                    compute_position(&position, irValues);
+                    pid_compute_speeds(&leftSpeed, &rightSpeed, position);
+                    printf("%d %d %d\n", position, leftSpeed, rightSpeed);
                 }
                 break;
             
             case STOP:
                 leftSpeed = 0;
                 rightSpeed = 0;
-                i2c_send(tmsg); // TODO ???
-                i2c_receive(rmsg); // TODO ??? 
-                get_direction(&direction, rmsg); // TODO
+                // i2c_send(tmsg); // TODO ???
+                // i2c_receive(rmsg); // TODO ??? 
+                // get_direction(&direction, rmsg); // TODO
                 if (direction == FRONT) {
                     state = FOLLOW;
                 } else {
@@ -252,8 +256,8 @@ int main (void) {
                 }
                 break;
         }
-        set_speeds(&leftSpeed, &rightSpeed);
-     
-        sync(); // TODO
+        motor_set_speeds(leftSpeed, rightSpeed);
+        delay_ms(1);
+        // sync();
     }
 }

@@ -1,6 +1,5 @@
 
 #include "qtr8rc.h"
-#include "utils.h"
 
 
 // SENSORS
@@ -24,7 +23,7 @@ const int QTR8RC_IR_LEDS[8] = {IR1_LED, IR2_LED, IR3_LED, IR4_LED, IR5_LED, IR6_
 #define QTR8RC_PERIOD (QTR8RC_TIME*APB1_CLK)/QTR8RC_PSC
 
 // SENSOR VALUES
-#define TIMEOUT QTR8RC_PERIOD
+const int TIMEOUT = QTR8RC_PERIOD;
 int calMaxValues[QTR8RC_NB_SENSORS] = {0};
 int calMinValues[QTR8RC_NB_SENSORS] = {0};
 
@@ -54,21 +53,21 @@ void display_irValues(int* irValues){
 }
 
 // =============== UTILS ===============
-void output_mode(int *leds) {
+void output_mode(const int *leds) {
     for (int i = 0; i < QTR8RC_NB_SENSORS; i++) {
         GPIOD_MODER = REP_BITS(GPIOD_MODER, leds[i]*2, 2, GPIO_MODER_OUT);
         GPIOD_OTYPER &= ~(1 << leds[i]);
     }
 }
 
-void input_mode(int *leds) {
+void input_mode(const int *leds) {
     for (int i = 0; i < QTR8RC_NB_SENSORS; i++) {
         GPIOD_MODER = REP_BITS(GPIOD_MODER, leds[i]*2, 2, GPIO_MODER_IN);
         GPIOD_OTYPER &= ~(1 << leds[i]);
     }
 }
 
-void drive_high(int *leds) { // make sensor line an output and drive high
+void drive_high(const int *leds) { // make sensor line an output and drive high
     for (int i = 0; i < QTR8RC_NB_SENSORS; i++) {
         GPIOD_ODR |= 1 << leds[i];
     }
@@ -96,12 +95,12 @@ void init_tim4(){
 void qtr8rc_init(void) {
     init_gpio();
 	init_tim4();
-    set_tab(calMinValues, QTR8RC_NB_SENSORS, TIMEOUT);    
+    //set_tab(calMinValues, QTR8RC_NB_SENSORS, TIMEOUT);    
     // Init minirValues
-    // for (int i = 0; i < QTR8RC_NB_SENSORS; i++) {
-    //     calMinValues[i] = TIMEOUT;
-    //     qtr8rc_wait_seconds(0.01); // ????
-    // }
+    for (int i = 0; i < QTR8RC_NB_SENSORS; i++) {
+        calMinValues[i] = TIMEOUT;
+        delay_ms(100); // ????
+    }
 }
 
 
@@ -156,21 +155,26 @@ void stop_tim4(void){
 */
 void measure(int *irValues, const Calibration calibration) {
     uint32_t startTime = TIM4_CNT; // Get the current time
+    printf("startTime=%d\n", startTime);
     uint32_t elapsedTime = 0; 
     uint32_t currentTime = 0;
 
     while (((currentTime=TIM4_CNT) + elapsedTime) < TIMEOUT) {
+        printf("now=%d\n", currentTime);
         elapsedTime = currentTime - startTime; // Compute the elapsed time
+        printf("elapse=%d\n", elapsedTime);
 
         // Compute each led's value
         for (unsigned int i = 0; i < QTR8RC_NB_SENSORS; i++) {
             if (((GPIOD_IDR & (1 << QTR8RC_IR_LEDS[i])) == 0) && (elapsedTime < irValues[i])){
                 if (calibration == ON) {
+                    printf("cal%d\n",i);
                     if (elapsedTime < calMinValues[i])
                         calMinValues[i] = elapsedTime;
                     if (elapsedTime > calMaxValues[i])
                         calMaxValues[i] = elapsedTime;
                 } else {
+                    printf("NONcal%d\n",i);
                     irValues[i] = elapsedTime;
                 }
             }
@@ -184,8 +188,9 @@ void measure(int *irValues, const Calibration calibration) {
 **  @return: None
 */
 void qtr8rc_read(int *irValues, const Calibration calibration) {
+    set_tab(irValues, QTR8RC_IR_LEDS, TIMEOUT);
     // Turn on the IR LEDs
-    turn_on_led(ON_LED);
+    led_turn_on(ON_LED);
     // Set the I/O line to an output
     output_mode(QTR8RC_IR_LEDS);
     // Drive the I/O line high
@@ -197,18 +202,20 @@ void qtr8rc_read(int *irValues, const Calibration calibration) {
     // Start the timer for the measure
     start_tim4();
     // Measure the time for the output to fall to low
-    measure(&irValues, calibration);
+    measure(irValues, calibration);
     // Disable the timer
     stop_tim4();
+
+    display_irValues(irValues);
+
     // Turn off IR LEDs
     led_turn_off(ON_LED);
     // Normalize the ir values
-    normalize(&irValues);
+    normalize(irValues);
 }
 
 void qtr8rc_calibrate(void) {
     int irValues[QTR8RC_NB_SENSORS] = {0};
-    set_tab(irValues, QTR8RC_NB_SENSORS, TIMEOUT);
     qtr8rc_read(irValues, ON);
 }
 
@@ -234,16 +241,18 @@ void compute_position(int *position, int *irValues) {
 
     if (!onLine) {
         // If it last read to the left of center, return 0.
-        if (position < (QTR8RC_NB_SENSORS - 1) * 1000 / 2) {
-            return 0;
+        if (*position < (QTR8RC_NB_SENSORS - 1) * 1000 / 2) {
+            *position = 0;
+            return;
         }
         // If it last read to the right of center, return the max.
         else {
-            return (QTR8RC_NB_SENSORS - 1) * 1000;
+            *position = (QTR8RC_NB_SENSORS - 1) * 1000;
+            return;
         }
     }
 
-    position = avg / sum;
+    *position = avg / sum;
 }
 
 /*
