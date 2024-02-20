@@ -2,6 +2,8 @@
 #include "pid.h"
 #include "qtr8rc.h"
 #include "motor_driver.h"
+#include "color_sens.h"
+
 #include "utils.h"
 
 
@@ -48,6 +50,7 @@ void init(void) {
     init_gpio_button();
     qtr8rc_init();
     motor_init();
+    color_init();
 }
 
 
@@ -57,7 +60,7 @@ void calibrate(void) {
     set_speed_left(-18);
     set_speed_right(18);
 
-    for (size_t i = 0; i < 50; i++) {
+    for (size_t i = 0; i < 20; i++) {
         qtr8rc_calibrate();
         robot_wait_seconds(0.2);
     }
@@ -77,23 +80,20 @@ int main(void) {
     printf("\n\n\nReady to calibrate !\n");
 
     RCC_AHB1ENR |= RCC_GPIOAEN;
-	RCC_AHB1ENR |= RCC_GPIODEN;
+    RCC_AHB1ENR |= RCC_GPIOBEN;
 	RCC_AHB1ENR |= RCC_GPIOCEN;
+	RCC_AHB1ENR |= RCC_GPIODEN;
 
-    RCC_APB1ENR |= RCC_TIM4EN;
-	RCC_APB1ENR |= RCC_TIM3EN;
 	RCC_APB1ENR |= RCC_TIM2EN;
+	RCC_APB1ENR |= RCC_TIM3EN;
+    RCC_APB1ENR |= RCC_TIM4EN;
+	RCC_APB1ENR |= RCC_TIM5EN;
 
     RCC_APB2ENR |= RCC_ADC1EN;
 
     init();
     
-    int position = 0;
-    int junctions[2] = {0};
-    int motorLeftSpeed = 27;
-    int motorRightSpeed = 22;
-
-    int stop = 0;
+    
     
     turn_on(GREEN_LED);
     wait_start();
@@ -106,8 +106,18 @@ int main(void) {
     turn_off(GREEN_LED);
     printf("Start !\n");
 
+    int position = 0;
+    int junctions[2] = {0};
+    int motorLeftSpeed = 27;
+    int motorRightSpeed = 22;
+
+    int stop = 0;
+    int isR = 0, isG = 0, isB = 0;
+
     while(1){
         qtr8rc_read_calibrated(&position, junctions);
+        color_read(&isG,&isB,&isR);
+
         if (junctions[0] | junctions[1]) {
             set_speed_left(0);
             set_speed_right(0);
