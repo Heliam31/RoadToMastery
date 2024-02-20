@@ -95,12 +95,12 @@ void init_tim4(){
 void qtr8rc_init(void) {
     init_gpio();
 	init_tim4();
-    //set_tab(calMinValues, QTR8RC_NB_SENSORS, TIMEOUT);    
+    set_tab(calMinValues, QTR8RC_NB_SENSORS, TIMEOUT);    
     // Init minirValues
-    for (int i = 0; i < QTR8RC_NB_SENSORS; i++) {
-        calMinValues[i] = TIMEOUT;
-        delay_ms(100); // ????
-    }
+    // for (int i = 0; i < QTR8RC_NB_SENSORS; i++) {
+    //     calMinValues[i] = TIMEOUT;
+    //     delay_ms(100); // ????
+    // }
 }
 
 
@@ -155,26 +155,21 @@ void stop_tim4(void){
 */
 void measure(int *irValues, const Calibration calibration) {
     uint32_t startTime = TIM4_CNT; // Get the current time
-    printf("startTime=%d\n", startTime);
     uint32_t elapsedTime = 0; 
     uint32_t currentTime = 0;
 
     while (((currentTime=TIM4_CNT) + elapsedTime) < TIMEOUT) {
-        printf("now=%d\n", currentTime);
         elapsedTime = currentTime - startTime; // Compute the elapsed time
-        printf("elapse=%d\n", elapsedTime);
 
         // Compute each led's value
         for (unsigned int i = 0; i < QTR8RC_NB_SENSORS; i++) {
             if (((GPIOD_IDR & (1 << QTR8RC_IR_LEDS[i])) == 0) && (elapsedTime < irValues[i])){
                 if (calibration == ON) {
-                    printf("cal%d\n",i);
                     if (elapsedTime < calMinValues[i])
                         calMinValues[i] = elapsedTime;
                     if (elapsedTime > calMaxValues[i])
                         calMaxValues[i] = elapsedTime;
                 } else {
-                    printf("NONcal%d\n",i);
                     irValues[i] = elapsedTime;
                 }
             }
@@ -188,7 +183,7 @@ void measure(int *irValues, const Calibration calibration) {
 **  @return: None
 */
 void qtr8rc_read(int *irValues, const Calibration calibration) {
-    set_tab(irValues, QTR8RC_IR_LEDS, TIMEOUT);
+    set_tab(irValues, QTR8RC_NB_SENSORS, TIMEOUT);
     // Turn on the IR LEDs
     led_turn_on(ON_LED);
     // Set the I/O line to an output
@@ -196,7 +191,7 @@ void qtr8rc_read(int *irValues, const Calibration calibration) {
     // Drive the I/O line high
     drive_high(QTR8RC_IR_LEDS);
     // Allow at least 10 μs for the sensor output to rise
-    delay_us(10);
+    delay_us(100);
     // Make the I/O line an input (high impedance)
     input_mode(QTR8RC_IR_LEDS);
     // Start the timer for the measure
@@ -206,7 +201,7 @@ void qtr8rc_read(int *irValues, const Calibration calibration) {
     // Disable the timer
     stop_tim4();
 
-    display_irValues(irValues);
+    // display_irValues(irValues);
 
     // Turn off IR LEDs
     led_turn_off(ON_LED);
@@ -228,7 +223,7 @@ void compute_position(int *position, int *irValues) {
         uint16_t value = irValues[i];
 
         // keep track of whether we see the line at all
-        if (value > 200) {
+        if (value > 350) {
             onLine = 1;
         }
 
@@ -238,6 +233,8 @@ void compute_position(int *position, int *irValues) {
             sum += value;
         }
     }
+
+    // printf("online==%d\n", onLine);
 
     if (!onLine) {
         // If it last read to the left of center, return 0.

@@ -67,6 +67,7 @@ void led_clear_all(void);
 void button_init(int button);
 void button_wait(int button);
 
+void display_state(State state);
 void display_direction(Direction direction);
 
 // =============== misc ===============

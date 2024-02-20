@@ -94,12 +94,14 @@ void init_tim6(void) {
 **  @return: None
 */
 void delay_ms(int ms) {
-    TIM6_SR &= ~TIM_UIF; // Clear the update event flag
-    TIM6_ARR = (APB1_CLK)/PSC_42000; // Set the auto-reload value
-    TIM6_CR1 = TIM_CEN; // Start the timer
-    int start = TIM6_CNT;
-    while(((TIM6_CNT ) - start )< ms) NOP; // Wait for the update event
     TIM6_CR1 &= ~TIM_CEN; // Stop the timer
+    TIM6_ARR = ms; // Set the auto-reload value
+    // printf("ARR=%d\n", TIM6_ARR);
+    TIM6_CR1 = TIM_CEN; // Start the timer
+    while((TIM6_SR & TIM_UIF) == 0);// printf("%d\n", TIM6_CNT); // Wait for the update event
+    // printf("END TIM6 MS\n");
+    TIM6_CR1 &= ~TIM_CEN; // Stop the timer
+    TIM6_SR &= ~TIM_UIF; // Clear the update event flag
 }
 
 /*
@@ -107,13 +109,16 @@ void delay_ms(int ms) {
 **  @param: us[in]: the number of microsecond to wait
 **  @return: None
 */
-void delay_us(int us) {
-    TIM6_SR &= ~TIM_UIF; // Clear the update event flag
-    TIM6_ARR = (APB1_CLK)/PSC_42; // Set the auto-reload value
-    TIM6_CR1 = TIM_CEN; // Start the timer
-    int start = TIM6_CNT;
-    while(((TIM6_CNT ) - start )< us) NOP; // Wait for the update event
+void delay_us(int us) { 
     TIM6_CR1 &= ~TIM_CEN; // Stop the timer
+    TIM6_SR &= ~TIM_UIF; // Clear the update event flag
+    TIM6_ARR = us; // Set the auto-reload value
+    // printf("ARR=%d\n", TIM6_ARR);
+    TIM6_CR1 = TIM_CEN; // Start the timer
+    while((TIM6_SR & TIM_UIF) == 0); // Wait for the update event
+    // printf("END TIM6 US\n");
+    TIM6_CR1 &= ~TIM_CEN; // Stop the timer
+    TIM6_SR &= ~TIM_UIF; // Clear the update event flag
 }
 
 void sync(void) {
@@ -175,6 +180,53 @@ void display_direction(Direction direction){
     }
 }
 
+// --------------- state ---------------
+void display_state(State state){
+    switch (state) {
+    case FOLLOW:
+        printf("State:FOLLOW\n");
+        break;
+    case STOP:
+        printf("State:STOP\n");
+        break;
+    case TURN:
+        printf("State:TURN\n");
+        break;
+    case S_LEFT:
+        printf("State:LEFT\n");
+        break;
+    case S_RIGHT:
+        printf("State:RIGHT\n");
+        break;
+    case S_BACK:
+        printf("State:BACK\n");
+        break;
+    case CHECK2:
+        printf("State:CHECK2\n");
+        break;
+    case CHECK3:
+        printf("State:CHECK3\n");
+        break;
+    case CHECK4:
+        printf("State:CHECK4\n");
+        break;
+    case CHECK5:
+        printf("State:CHECK5\n");
+        break;
+    case CHECK6:
+        printf("State:CHECK6\n");
+        break;
+    case CHECK7:
+        printf("State:CHECK7\n");
+        break;
+        break;
+    case CHECK8_WHITE:
+        printf("State:CHECK8_WHITE\n");
+        break;
+    default:
+        break;
+    }
+}
 
 // ==================== MISC ====================
 void set_tab(int *tab, int size, int value) {
