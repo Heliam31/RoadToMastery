@@ -2,9 +2,11 @@
 #include "qtr8rc.h"
 #include "motor_driver.h"
 #include "utils.h"
+#include "I2C.h"
 
 
 // GLOBALS
+
 
 // INIT
 void enable_clk(void) {
@@ -17,6 +19,8 @@ void enable_clk(void) {
     RCC_APB1ENR |= RCC_TIM4EN;
 	RCC_APB1ENR |= RCC_TIM6EN;
 
+    RCC_APB1ENR |= RCC_I2C1EN | RCC_TIM5EN;
+	RCC_AHB1ENR |= RCC_GPIOBEN;
     RCC_APB2ENR |= RCC_ADC1EN;
 }
 
@@ -30,6 +34,8 @@ void init(void) {
     led_init(RED_LED);
     led_init(BLUE_LED);
     button_init(BUTTON);
+    i2c_config(8, 9);
+
 }
 
 void calibration(void) {
@@ -119,10 +125,26 @@ int on_junction(int *roads){
     return roads[LEFT] | roads[RIGHT]; 
 }
 
+
+State choose_direction(int reg){
+    if(reg == 1){
+        return RIGHT;
+    }else if (reg == 2)
+    {
+        return FRONT;
+    }else if (reg == 4)
+    {
+        return LEFT;
+    }else if (reg == 8)
+    {
+        return BACK;
+    }
+}
+
 int main (void) {
     enable_clk();
     init();
-    calibration();
+    //calibration();
 
     int irValues [8] = {0};
     int sonarValue = 0;
@@ -141,19 +163,21 @@ int main (void) {
     State state = FOLLOW;
     Direction direction = BACK;
     roads[BACK] = 1;
-
-    led_turn_on(GREEN_LED);
-    button_wait(BUTTON);
-    led_turn_off(GREEN_LED);
+       
+    // led_turn_on(GREEN_LED);
+    // button_wait(BUTTON);
+    // led_turn_off(GREEN_LED);
 
     while(1) {
         // start_timer(); // TODO
         
-        qtr8rc_read(irValues, OFF);
+        //qtr8rc_read(irValues, OFF);
         // sonar_read(&sonarValue); // TODO ???
 
-        compute_position(&position, irValues);
+        //compute_position(&position, irValues);
         
+        
+        state = STOP;
         switch(state) {
             case FOLLOW:
                 pid_compute_speeds(&leftSpeed, &rightSpeed, &position);
@@ -178,17 +202,28 @@ int main (void) {
 
             case STOP:
                 // delay_ms(50);
-                motor_disable(M_LEFT); leftSpeed = 0;
-                motor_disable(M_RIGHT); rightSpeed = 0;
-                button_wait(BUTTON);
-                // i2c_send(tmsg); // TODO ???
-                // i2c_receive(rmsg); // TODO ??? 
-                // get_direction(&direction, rmsg); // TODO
+                //motor_disable(M_LEFT); leftSpeed = 0;
+                //motor_disable(M_RIGHT); rightSpeed = 0;
+                //button_wait(BUTTON);
+                ///////////////I2C AJOUT/////////////////
+                uint8_t reg_send[2] = { 1, 0b0101}; //reg à send
+                uint8_t reg_receive[1] = {0}; //reg pour demander des données
+                printf("Loop\n");
+                i2c_send(ESP32_ADDR, reg_send , 2); //on send des données
+                printf("bien send\n");
+                i2c_receive(ESP32_ADDR, reg_receive, 1); //on demande des données
+                printf("receive\n");
+                while((TIM5_SR & TIM_UIF) == 0);
+         		TIM5_SR = 0;
+                /////////////////////////////////////////
+                direction = choose_direction(reg_receive[0]);
+                printf("La direction est : %d\n", direction);
                 if (direction == FRONT) {
                     state = FOLLOW;
                 } else {
                     state = TURN;
                 }
+                state = STOP;
                 break;
             
             case TURN:
@@ -266,11 +301,11 @@ int main (void) {
                 }
                 break;
         }
-        display_irValues(irValues);
-        printf("%d:", position);
-        printf("%d;%d\n", leftSpeed, rightSpeed);
-        display_direction(direction);
-        display_state(state);
+        //display_irValues(irValues);
+        //printf("%d:", position);
+        //printf("%d;%d\n", leftSpeed, rightSpeed);
+        //display_direction(direction);
+        //display_state(state);
 
         motor_set_speeds(leftSpeed, rightSpeed);
 
