@@ -10,8 +10,6 @@
 #define PC6 6 	// enA
 #define PC7 7 	// enB
 
-typedef enum motor_e {M_LEFT, M_RIGHT} Motor;
-
 typedef struct motor_s {
 	int en;
 	int in1;
@@ -125,8 +123,8 @@ void set_speed_right(int speed) {
 		set_backward(M_RIGHT);
 	else if (speed > 0) // forward
 		set_forward(M_RIGHT);
-	else if (speed == 0)
-		motor_disable(M_RIGHT);
+	// else if (speed == 0)
+	// 	motor_disable(M_RIGHT);
 
 	TIM3_CCR1 = (abs(speed) * PMOTOR) / 100;
 }
@@ -142,8 +140,8 @@ void set_speed_left(int speed) {
 		set_backward(M_LEFT);
 	else if (speed > 0) // forward
 		set_forward(M_LEFT);
-	else if (speed == 0)
-		motor_disable(M_LEFT);
+	// else if (speed == 0)
+	// 	motor_disable(M_LEFT);
 
 	TIM3_CCR2 = (abs(speed) * PMOTOR) / 100;
 }

@@ -44,10 +44,10 @@ void calibration(void) {
 
     motor_set_speeds(-25, 25);
 
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 250; i++) {
         qtr8rc_calibrate();
         // printf("DELAY MS\n");
-        delay_ms(5);
+        delay_ms(1);
         // printf("MS DOWN\n");
     }
 
@@ -64,23 +64,23 @@ void move_on_line(int *leftSpeed, int *rightSpeed, Direction *direction) {
     switch (*direction) {
     case BACK:
         led_turn_on(ORANGE_LED);
-        *leftSpeed = -17;
-        *rightSpeed = 17;
+        *leftSpeed = -20;
+        *rightSpeed = 20;
         break;
     case FRONT:
         led_turn_on(BLUE_LED);
-        *leftSpeed = 17;
-        *rightSpeed = 17;
+        *leftSpeed = 20;
+        *rightSpeed = 20;
         break;
     case LEFT:
         led_turn_on(RED_LED);
-        *leftSpeed = -17;
-        *rightSpeed = 17;
+        *leftSpeed = -20;
+        *rightSpeed = 20;
         break;
     case RIGHT:
         led_turn_on(GREEN_LED);
-        *leftSpeed = 17;
-        *rightSpeed = -17;
+        *leftSpeed = 20;
+        *rightSpeed = -20;
         break;
     default:
         break;
@@ -153,10 +153,10 @@ int main (void) {
         // sonar_read(&sonarValue); // TODO ???
 
         compute_position(&position, irValues);
-        pid_compute_speeds(&leftSpeed, &rightSpeed, position);
         
         switch(state) {
             case FOLLOW:
+                pid_compute_speeds(&leftSpeed, &rightSpeed, &position);
                 get_avaible_roads(roads, irValues);
                 // printf("->%d \n",position);
                 // display_irValues(irValues);
@@ -177,8 +177,10 @@ int main (void) {
                 break;
 
             case STOP:
-                leftSpeed = 0;
-                rightSpeed = 0;
+                // delay_ms(50);
+                motor_disable(M_LEFT); leftSpeed = 0;
+                motor_disable(M_RIGHT); rightSpeed = 0;
+                button_wait(BUTTON);
                 // i2c_send(tmsg); // TODO ???
                 // i2c_receive(rmsg); // TODO ??? 
                 // get_direction(&direction, rmsg); // TODO
@@ -190,8 +192,6 @@ int main (void) {
                 break;
             
             case TURN:
-                // delay_ms(50);
-                button_wait(BUTTON);
                 move_on_line(&leftSpeed, &rightSpeed, &direction);
                 if (direction == LEFT) {
                     state = S_LEFT;
@@ -215,10 +215,9 @@ int main (void) {
                 break;
             
             case S_BACK:
-                // if (direction != LEFT) {
-                //     state = S_LEFT;
-                // } else
-                if (irValues[7] == 1000) {
+                if (roads[LEFT] != 1) {
+                    state = S_LEFT;
+                } else if (irValues[7] == 1000) {
                     state = CHECK8_WHITE;
                 }
                 break;
@@ -267,13 +266,14 @@ int main (void) {
                 }
                 break;
         }
-        // display_irValues(irValues);
-        // printf("%d:", position);
-        // printf("%d;%d\n", leftSpeed, rightSpeed);
-        // display_direction(direction);
-        // display_state(state);
+        display_irValues(irValues);
+        printf("%d:", position);
+        printf("%d;%d\n", leftSpeed, rightSpeed);
+        display_direction(direction);
+        display_state(state);
 
         motor_set_speeds(leftSpeed, rightSpeed);
+
         // sync();
     }
 }

@@ -191,7 +191,7 @@ void qtr8rc_read(int *irValues, const Calibration calibration) {
     // Drive the I/O line high
     drive_high(QTR8RC_IR_LEDS);
     // Allow at least 10 μs for the sensor output to rise
-    delay_us(100);
+    delay_us(10);
     // Make the I/O line an input (high impedance)
     input_mode(QTR8RC_IR_LEDS);
     // Start the timer for the measure
