@@ -20,16 +20,23 @@
 
 //I2C_CR1
 #define I2C_CR1_PE          (1 << 0)
+#define I2C_CR1_ACK         (1 << 10)
 #define I2C_CR1_START       (1 << 8)
 #define I2C_CR1_STOP        (1 << 9)
 #define I2C_CR1_SWRST       (1 << 15)
 
 //I2C_CR2
 #define I2C_CR2_ITERREN     (1 << 8)
+#define I2C_CR2_ITEVTEN     (1 << 9)
+#define I2C_CR2_ITBUFFEN     (1 << 10)
 
 //I2C_SR1
 #define I2C_SR1_ADDR    (1 << 1)
+#define I2C_SR1_BERR    (1 << 8)
+#define I2C_SR1_STOPF   (1 << 4)
+#define I2C_SR1_AF      (1 << 10)
 #define I2C_SR1_BTF     (1 << 2)
+#define I2C_SR1_TXE     (1 << 7)
 #define I2C_SR1_RXNE    (1 << 6)
 #define I2C_SR1_SB      (1 << 0)
 
@@ -41,5 +48,6 @@
 
 // interrupts
 #define I2C1_ER_IRQ	32
+#define I2C1_EV_IRQ 31
 
 #endif
