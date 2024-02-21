@@ -1,19 +1,14 @@
-
 #include "pid.h"
 #include "qtr8rc.h"
 #include "motor_driver.h"
 #include "color_sens.h"
+#include "sonar.h"
 
 #include "utils.h"
 
 
 #define GREEN_LED 12
 #define BUTTON 0
-
-// TIMER POUR SYNC
-#define N 0.1
-#define PSC 128 // ->1s  // 8->0.01s
-#define PERIOD (N*APB1_CLK)/PSC
 
 // UTILS 
 void _robot_delay(int cycles) {
@@ -23,15 +18,6 @@ void _robot_delay(int cycles) {
 void robot_wait_seconds(float seconds) {
     int cycles = seconds*APB1_CLK;
     _robot_delay(cycles);
-}
-
-void init_timer_sync(void) {
-    TIM2_CR1 = 0;
-	TIM2_PSC = PSC-1;
-	TIM2_ARR = PERIOD;
-	TIM2_EGR = TIM_UG;
-	TIM2_CR1 |= TIM_CEN | TIM_ARPE;
-	TIM2_SR = 0;
 }
 
 void init_gpio_led(void) {
@@ -45,11 +31,12 @@ void init_gpio_button(void) {
 }
 
 void init(void) {
-    init_timer_sync();
     init_gpio_led();
     init_gpio_button();
+
     qtr8rc_init();
     motor_init();
+    sonar_init();
     color_init();
 }
 
@@ -57,10 +44,10 @@ void init(void) {
 void calibrate(void) {
     printf("Calibrating...\n");
 
-    set_speed_left(-18);
-    set_speed_right(18);
+    set_speed_left(-27);
+    set_speed_right(27);
 
-    for (size_t i = 0; i < 20; i++) {
+    for (size_t i = 0; i < 50; i++) {
         qtr8rc_calibrate();
         robot_wait_seconds(0.2);
     }
@@ -93,8 +80,6 @@ int main(void) {
 
     init();
     
-    
-    
     turn_on(GREEN_LED);
     wait_start();
     turn_off(GREEN_LED);
@@ -106,29 +91,46 @@ int main(void) {
     turn_off(GREEN_LED);
     printf("Start !\n");
 
+    int stop = 0;
+    int stop_b = 0;
+    int sonarUse_b = 0;
+    int isR = 0, isG = 0, isB = 0;
     int position = 0;
     int junctions[2] = {0};
-    int motorLeftSpeed = 27;
-    int motorRightSpeed = 22;
-
-    int stop = 0;
-    int isR = 0, isG = 0, isB = 0;
+    int motorLeftSpeed = 0;
+    int motorRightSpeed = 0;
+    unsigned int* distance = 0;
 
     while(1){
         qtr8rc_read_calibrated(&position, junctions);
         color_read(&isG,&isB,&isR);
-
+        sonar_read(&distance);
+        
+        if (sonarUse_b) {
+            sonar_read(&distance);
+            if (distance <= 8) {
+                set_speed_left(0);
+                set_speed_right(0);
+                stop_b = 1;
+            }
+            // printf("->%d\n", distance);
+        }
         if (junctions[0] | junctions[1]) {
             set_speed_left(0);
             set_speed_right(0);
-            stop = 1;
-        } else if (!stop) {
+            stop_b = 1;
+        } 
+        
+        if (!stop_b) {
             compute_motor_speed(&motorLeftSpeed, &motorRightSpeed, position);
             set_speed_left(motorLeftSpeed);
             set_speed_right(motorRightSpeed);
         }
+
         if ((GPIOA_IDR & (1 << SW_USER)) != 0) {
-            stop = 0;
+            stop_b = 0;
         }
+        // printf("%d | %d | %d\n",isR, isG, isB);
+        sonarUse_b = !sonarUse_b;
     }
 }
