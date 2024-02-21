@@ -71,8 +71,8 @@ void move_on_line(int *leftSpeed, int *rightSpeed, Direction *direction) {
         break;
     case FRONT:
         led_turn_on(BLUE_LED);
-        *leftSpeed = 15;
-        *rightSpeed = 15;
+        *leftSpeed = 25;
+        *rightSpeed = 25;
         break;
     case LEFT:
         led_turn_on(RED_LED);
@@ -91,6 +91,17 @@ void move_on_line(int *leftSpeed, int *rightSpeed, Direction *direction) {
 
 int on_junction(int *roads){
     return roads[LEFT] | roads[RIGHT]; 
+}
+
+int on_road(int *irValues) {
+    int onRoad = 0;
+    for (int i = 0; i < 8; i++) {
+        if (irValues[i] == 1000) {
+            onRoad = 1;
+            i = 8;
+        }
+    }
+    return onRoad;
 }
 
 State choose_direction(int reg){
@@ -125,7 +136,7 @@ int main (void) {
     int stop = 0;
 
     State state = FOLLOW;
-    Direction direction = RIGHT;
+    Direction direction = FRONT;
     roads[BACK] = 1;
 
     led_turn_on(GREEN_LED);
@@ -176,7 +187,9 @@ int main (void) {
                 // /////////////////////////////////////////
 
                 if (direction == FRONT) {
-                    state = FOLLOW;
+                    if ((on_road(irValues) == 1) && roads[FRONT]) {
+                        state = FOLLOW;
+                    } // else = no front road -> STOP 
                 } else {
                     state = TURN;
                 }
@@ -257,11 +270,11 @@ int main (void) {
                 }
                 break;
         }
-        display_irValues(irValues);
-        printf("%d:", position);
-        printf("%d;%d\n", leftSpeed, rightSpeed);
-        display_direction(direction);
-        display_state(state);
+        // display_irValues(irValues);
+        // printf("%d:", position);
+        // printf("%d;%d\n", leftSpeed, rightSpeed);
+        // display_direction(direction);
+        // display_state(state);
 
         motor_set_speeds(leftSpeed, rightSpeed);
     }
