@@ -23,8 +23,8 @@ batLev: 75&100 (old Ki),        50&50
 int errors[10] = {0,0,0,0,0,0,0,0,0,0};
 int lastError = 0;
 int errorSum = 0;
-const int maxSpeedRight = 27;
-const int maxSpeedLeft = 27;
+const int maxSpeedRight = 25;
+const int maxSpeedLeft = 25;
 const int baseSpeedRight = 18;
 const int baseSpeedLeft = 18;
 

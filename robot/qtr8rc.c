@@ -267,7 +267,15 @@ void get_avaible_roads(int *roads, int *irValues) {
             sensors[i] = 0;
         }
     }
+    if (roads[LEFT]==1) {
+        roads[LEFT] = sensors[5] | sensors[6] | sensors[7];
+    } else {
+        roads[LEFT] = sensors[5] & sensors[6] & sensors[7];
+    }
+    if (roads[RIGHT]==1) {
+        roads[RIGHT] = sensors[0] | sensors[1] | sensors[2];
+    } else {
+        roads[RIGHT] = sensors[0] & sensors[1] & sensors[2];
+    }
     roads[FRONT] = sensors[3] | sensors[4];
-    roads[RIGHT] = sensors[0] & sensors[1] & sensors[2];
-    roads[LEFT] = sensors[5] & sensors[6] & sensors[7];
 }

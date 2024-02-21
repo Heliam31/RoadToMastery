@@ -4,7 +4,7 @@
 #include "utils.h"
 
 
-// GLOBALS
+#define NB_ROADS 4
 
 // INIT
 void enable_clk(void) {
@@ -64,55 +64,27 @@ void move_on_line(int *leftSpeed, int *rightSpeed, Direction *direction) {
     switch (*direction) {
     case BACK:
         led_turn_on(ORANGE_LED);
-        *leftSpeed = -20;
-        *rightSpeed = 20;
+        *leftSpeed = -15;
+        *rightSpeed = 15;
         break;
     case FRONT:
         led_turn_on(BLUE_LED);
-        *leftSpeed = 20;
-        *rightSpeed = 20;
+        *leftSpeed = 15;
+        *rightSpeed = 15;
         break;
     case LEFT:
         led_turn_on(RED_LED);
-        *leftSpeed = -20;
-        *rightSpeed = 20;
+        *leftSpeed = -15;
+        *rightSpeed = 15;
         break;
     case RIGHT:
         led_turn_on(GREEN_LED);
-        *leftSpeed = 20;
-        *rightSpeed = -20;
+        *leftSpeed = 15;
+        *rightSpeed = -15;
         break;
     default:
         break;
     }
-}
-
-int on_road(Direction *direction, int *irValues) {
-    switch (*direction) {
-    case BACK:
-        if (irValues[0] > 1000 && irValues[1] > 1000) {
-            return 1;
-        }
-        break;
-    case FRONT:
-        if (irValues[6] > 1000 && irValues[7] > 1000) {
-            return 1;
-        }
-        break;
-    case LEFT:
-        if (irValues[0] > 1000 && irValues[7] > 1000) {
-            return 1;
-        }
-        break;
-    case RIGHT:
-        if (irValues[6] > 1000 && irValues[1] > 1000) {
-            return 1;
-        }
-        break;
-    default:
-        break;
-    }
-    return 0;
 }
 
 int on_junction(int *roads){
@@ -139,18 +111,18 @@ int main (void) {
     // msg_t *rmsg = {ESP32_ADDR, {0}, 8};
 
     State state = FOLLOW;
-    Direction direction = BACK;
+    Direction direction = LEFT;
     roads[BACK] = 1;
 
     led_turn_on(GREEN_LED);
     button_wait(BUTTON);
     led_turn_off(GREEN_LED);
 
+    int tmpRoads[NB_ROADS] = {0};
+
     while(1) {
-        // start_timer(); // TODO
         
         qtr8rc_read(irValues, OFF);
-        // sonar_read(&sonarValue); // TODO ???
 
         compute_position(&position, irValues);
         
@@ -158,32 +130,26 @@ int main (void) {
             case FOLLOW:
                 pid_compute_speeds(&leftSpeed, &rightSpeed, &position);
                 get_avaible_roads(roads, irValues);
-                // printf("->%d \n",position);
-                // display_irValues(irValues);
-                // if ((on_junction(roads) == 0) && !stop) {
-                //     compute_position(&position, irValues);
-                //     pid_compute_speeds(&leftSpeed, &rightSpeed, position);
-                //     // printf("%d %d %d\n", position, leftSpeed, rightSpeed);
-                // } else 
                 if ((on_junction(roads) == 0) && stop) {
                     state = STOP;
-                    for (int i = 0; i < 4; i++) {
-                        // tmsg->data[i] = roads[i];
-                    }
+                    motor_disable(M_LEFT); leftSpeed = 0;
+                    motor_disable(M_RIGHT); rightSpeed = 0;
                     stop = 0;
                 } else if ((on_junction(roads) == 1)) {
+                    tmpRoads[LEFT] = roads[LEFT];
+                    tmpRoads[RIGHT] = roads[RIGHT];
                     stop = 1;
                 }
                 break;
 
             case STOP:
-                // delay_ms(50);
-                motor_disable(M_LEFT); leftSpeed = 0;
-                motor_disable(M_RIGHT); rightSpeed = 0;
-                button_wait(BUTTON);
+                // motor_disable(M_LEFT); leftSpeed = 0;
+                // motor_disable(M_RIGHT); rightSpeed = 0;
+                // button_wait(BUTTON);
                 // i2c_send(tmsg); // TODO ???
                 // i2c_receive(rmsg); // TODO ??? 
                 // get_direction(&direction, rmsg); // TODO
+                delay_ms(2000);
                 if (direction == FRONT) {
                     state = FOLLOW;
                 } else {
@@ -192,7 +158,6 @@ int main (void) {
                 break;
             
             case TURN:
-                move_on_line(&leftSpeed, &rightSpeed, &direction);
                 if (direction == LEFT) {
                     state = S_LEFT;
                 } else if (direction == RIGHT) {
@@ -200,6 +165,7 @@ int main (void) {
                 } else {
                     state = S_BACK;
                 }
+                move_on_line(&leftSpeed, &rightSpeed, &direction);
                 break;
 
             case S_RIGHT:
@@ -215,7 +181,9 @@ int main (void) {
                 break;
             
             case S_BACK:
-                if (roads[LEFT] != 1) {
+                if (tmpRoads[LEFT] != 1) {
+                    tmpRoads[LEFT] = 0;
+                    tmpRoads[RIGHT] = 0;
                     state = S_LEFT;
                 } else if (irValues[7] == 1000) {
                     state = CHECK8_WHITE;
@@ -236,13 +204,11 @@ int main (void) {
             
             case CHECK4:
                 if (irValues[3] == 1000) {
-                    motor_set_speeds(-8, -8);
                     state = FOLLOW;
                 }
                 break;
             
             case CHECK5:
-                motor_set_speeds(-8, -8);
                 if (irValues[4] == 1000) {
                     state = FOLLOW;
                 }
@@ -266,14 +232,14 @@ int main (void) {
                 }
                 break;
         }
-        display_irValues(irValues);
-        printf("%d:", position);
-        printf("%d;%d\n", leftSpeed, rightSpeed);
-        display_direction(direction);
-        display_state(state);
+        // display_irValues(irValues);
+        // printf("%d:", position);
+        // printf("%d;%d\n", leftSpeed, rightSpeed);
+        // display_direction(direction);
+        // display_state(state);
 
         motor_set_speeds(leftSpeed, rightSpeed);
 
-        // sync();
+
     }
 }
