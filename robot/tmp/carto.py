@@ -1,4 +1,5 @@
 import tkinter
+import time
 
 #--------------------------------------------------------FONCTIONS----------------------------------------------------------------#
 
@@ -7,7 +8,14 @@ n = 2 #nombre de robots
 class Node:
     def __init__(self):
         self.state = 0      #state : 0=pas encore visité, 1=déja visité, 2=voisins déja visités
-        self.edges = [0,0,0,0] #arrete en  : 0 = up, 1 = right, 2 = down, 3 = left  # Si case=1 : ligne, case = 2:pas de ligne, case = 0:pas visité
+        self.neigh = [-1,-1,-1,-1]
+        self.visited = 0
+        self.edges = [0,0,0,0] #arrete en  : 0 = up, 1 = right, 2 = down, 3 = left  # Si case=1 : ligneprise, case=3 lignepaprise ,case = 2:pas de ligne, case = 0:pas visité
+    def setNeigh (self,n):
+        for i in range(4):
+            if(n[i] != -1):
+                if (self.neigh[i] != 0):
+                    self.neigh[i] = n[i]
     def getState(self):
         return self.state
     def getEdges(self):
@@ -16,14 +24,15 @@ class Node:
         self.state = s
     def setEdges(self,p): #-1 si on modifie pas
         for i in range(4):
-            if(p[i]!=-1):
+            if((p[i]!=-1) and (self.edges[i]==0)):
                 self.edges[i] = p[i]
     def visit(self,dir): #dir : 0 = up, 1 = right, 2 = down, 3 = left
         self.edges[dir] = 1
         self.state = 2
-        for i in self.edges:
-            if (i == 0):
-                self.state = 1
+        for i in self.neigh:
+            if (i != 0):
+                if(i.getState()==0):
+                    self.state=1
 
 def valid(pos):
     # to be valid the position has to be inside the tableau and not yet been visited
@@ -37,7 +46,7 @@ def valid(pos):
         return False
     return True
 
-class Robot:
+class Robot: 
     def __init__(self,id):
         self.id = id
         self.lastPos = [0,0]
@@ -56,14 +65,15 @@ class Robot:
         return self.direction
     def setDir (self,d):
         self.direction = d
-    def move(self, dir): 
+    def move(self, dir):        # [0,0] dir = 1  move en dir 1
         pos=[0,0]
         if(dir == 0):
             pos[0] = (self.presentPos[0]-1)
             pos[1] = self.presentPos[1]
         if(dir == 1):
             pos[0] = self.presentPos[0]
-            pos[1] = (self.presentPos[1]+1)
+            pos[1] = (self.presentPos[1]+1)         #pos = [0,1]
+
         if(dir == 2):
             pos[0] = (self.presentPos[0]+1)
             pos[1] = self.presentPos[1]
@@ -78,19 +88,15 @@ class Robot:
             cdir = 0
             if (self.lastPos[0]==(pos[0]-1)):
                 cdir = 2
-                tableau[self.lastPos[0]][self.lastPos[1]].visit(cdir)
                 tableau[pos[0]][pos[1]].visit(0)
             elif (self.lastPos[1]==(pos[1]+1)):
                 cdir = 3
-                tableau[self.lastPos[0]][self.lastPos[1]].visit(cdir)
                 tableau[pos[0]][pos[1]].visit(1)
             elif (self.lastPos[0]==(pos[0]+1)):
                 cdir = 0
-                tableau[self.lastPos[0]][self.lastPos[1]].visit(cdir)
                 tableau[pos[0]][pos[1]].visit(2)
             elif (self.lastPos[1]==(pos[1]-1)):
                 cdir = 1
-                tableau[self.lastPos[0]][self.lastPos[1]].visit(cdir)
                 tableau[pos[0]][pos[1]].visit(3)
             
             if (self.direction==0):
@@ -122,7 +128,7 @@ class Robot:
                     self.relativeDirection = 3
                 elif (cdir == 3):
                     self.relativeDirection = 0
-            self.direction = cdir
+            self.direction = dir
             return 1
         else:
             return 0
@@ -142,55 +148,141 @@ def recupInfo(i):
     elif (i.direction==3):
         availinter = [availinter[2],1,availinter[0],availinter[1]]
     if(pos[0]==0):
-        availinter[3] = -1
-    if(pos[0]==longueurY):
+        availinter[0] = -1
+    if(pos[0]==longueurX):
         availinter[2] = -1
     if(pos[1]==0):
-        availinter[0] = -1
-    if(pos[1]==longueurX):
+        availinter[3] = -1
+    if(pos[1]==longueurY):
         availinter[1] = -1
+    incr=0    
+    for e in tableau[pos[0]][pos[1]].getEdges():
+        if (e == 2):
+            availinter[incr] = -1
+        incr +=1
     return availinter  #[haut, droite, bas, gauche]
 
 def updateEverySecond():
     #------------------------------DECISION----------------------------#  
     
-    for i in robList:
-        availinter = recupInfo(i)
-        for x in range(4):
-            if (availinter[x]==0):
-                availinter[x]==2
-        pos = i.getPresentPos()
-        tableau[pos[0]][pos[1]].setEdges(availinter)
-        val = []
-        for x in range(4):
+    i=robList[1]
+    availinter = recupInfo(i)
+    for x in range(4):
+        if (availinter[x]==0):
+            availinter[x]==2
+    pos = i.getPresentPos()
+    tableau[pos[0]][pos[1]].setEdges(availinter)
+    val = []
+    for z in range(4):
+        if(availinter[z]!=-1):
             test = tableau[pos[0]][pos[1]]
-            if (x==0):
+            if (z==0):
                 test = tableau[pos[0]-1][pos[1]]
-            if (x==1):
+            if (z==1):
                 test = tableau[pos[0]][pos[1]+1]
-            if (x==2):
+            if (z==2):
                 test = tableau[pos[0]+1][pos[1]]
-            if (x==3):
+            if (z==3):
                 test = tableau[pos[0]][pos[1]-1]
-            oui = test.getState()
-            if(oui != 2):
-                val.append(x)
-        dir = 0
-        for vp in val:
-            if (vp == 0):
-                dir = vp
-                break
-        
-        i.move(dir)       
-        
+            if(test.getState() != 2):
+                val.append(z)
+    dir = -1
+    for vp in val:
+        test = tableau[pos[0]][pos[1]]
+        if (vp==0):
+            test = tableau[pos[0]-1][pos[1]]
+        if (vp==1):
+            test = tableau[pos[0]][pos[1]+1]
+        if (vp==2):
+            test = tableau[pos[0]+1][pos[1]]
+        if (vp==3):
+            test = tableau[pos[0]][pos[1]-1]
+        print(test.getState())
+        if (test.getState() == 0):
+            dir = vp
+            break
+        if (test.getState() == 1):
+            dir = vp
+    if (dir == -1):
+        ouva = i.getOneHistory()
+        if (pos[0]==ouva[0]+1):
+            dir = 0
+        elif (pos[0]==ouva[0]-1):
+            dir = 2 
+        elif (pos[1]==ouva[1]-1):
+            dir = 1 
+        elif (pos[1]==ouva[1]+1):
+            dir = 3
+    i.move(dir)       
+    #-----------------------ROBOT 2-------------------------#
+    i=robList[0]
+    availinter = recupInfo(i)
+    for x in range(4):
+        if (availinter[x]==0):
+            availinter[x]==2
+    pos = i.getPresentPos()
+    tableau[pos[0]][pos[1]].setEdges(availinter)
+    print(tableau[pos[0]][pos[1]+1].getState())
+    val = []
+    z = 0
+    if(availinter[z]!=-1):
+        test = tableau[pos[0]][pos[1]]
+        if (z==0):
+            test = tableau[pos[0]-1][pos[1]]
+        if (z==1):
+            test = tableau[pos[0]][pos[1]+1]
+        if (z==2):
+            test = tableau[pos[0]+1][pos[1]]
+        if (z==3):
+            test = tableau[pos[0]][pos[1]-1]
+        if(test.getState() != 2):
+            val.append(z)
+    for z in range(3, 1, -1):
+        if(availinter[z]!=-1):
+            if (z==0):
+                test = tableau[pos[0]-1][pos[1]]
+            if (z==1):
+                test = tableau[pos[0]][pos[1]+1]
+            if (z==2):
+                test = tableau[pos[0]+1][pos[1]]
+            if (z==3):
+                test = tableau[pos[0]][pos[1]-1]
+            if(test.getState() != 2):
+                val.append(z)
+    dir = -1
+    for vp in val:
+        test = tableau[pos[0]][pos[1]]
+        if (vp==0):
+            test = tableau[pos[0]-1][pos[1]]
+        if (vp==1):
+            test = tableau[pos[0]][pos[1]+1]
+        if (vp==2):
+            test = tableau[pos[0]+1][pos[1]]
+        if (vp==3):
+            test = tableau[pos[0]][pos[1]-1]
+            
+        if (test.getState() == 0):
+            dir = vp
+            break
+        if (test.getState() == 1):
+            dir = vp
+    if (dir == -1):
+        ouva = i.getOneHistory()
+        if (pos[0]==ouva[0]+1):
+            dir = 0
+        elif (pos[0]==ouva[0]-1):
+            dir = 2 
+        elif (pos[1]==ouva[1]-1):
+            dir = 1 
+        elif (pos[1]==ouva[1]+1):
+            dir = 3
+    i.move(dir)           
     
     #------------------------------AFFICHE-----------------------------#    
-    longueur_case = W//(longueurX)
-    largeur_case = H//(longueurY)
+
     
-    for i in range(longueurY):
-        for j in range(longueurX):
-            a, b = i+1, j+1
+    for i in range(longueurX):
+        for j in range(longueurY):
             haut, bas, gauche, droite = (None,)*4
             now = tableau[i][j].getState()
             if i != 0:
@@ -223,39 +315,45 @@ def updateEverySecond():
                     droite = 0
             # print(tableau[0][1].getState())  
             if now != 0:
+                
                 if droite==1:
-                    canva.create_line(b*longueur_case, a*largeur_case,
-                                    (b+1)*longueur_case, a*largeur_case,
+                    canva.create_line(j*longueur_case+5, i*largeur_case+5,
+                                    (j+1)*longueur_case+5, i*largeur_case+5,
                                     fill ='black', width = 2)
                 if droite==2:
-                    canva.create_line(b*longueur_case, a*largeur_case,
-                                    (b+1)*longueur_case, a*largeur_case,
+                    canva.create_line(j*longueur_case+5, i*largeur_case+5,
+                                    (j+1)*longueur_case+5, i*largeur_case+5,
                                     fill ='red', width = 2)
                 if gauche==1:
-                    canva.create_line(b*longueur_case, a*largeur_case,
-                                    (b-1)*longueur_case, a*largeur_case,
+                    canva.create_line(j*longueur_case+5, i*largeur_case+5,
+                                    (j-1)*longueur_case+5, i*largeur_case+5,
                                     fill ='black', width = 2)
                 if gauche==2:
-                    canva.create_line(b*longueur_case, a*largeur_case,
-                                    (b-1)*longueur_case, a*largeur_case,
+                    canva.create_line(j*longueur_case+5, i*largeur_case+5,
+                                    (j-1)*longueur_case+5, i*largeur_case+5,
                                     fill ='red', width = 2)
                 if bas==1:
-                    canva.create_line(b*longueur_case, a*largeur_case,
-                                    b*longueur_case, (a+1)*largeur_case,
+                    canva.create_line(j*longueur_case+5, i*largeur_case+5,
+                                    j*longueur_case+5, (i+1)*largeur_case+5,
                                     fill ='black', width = 2)
                 if bas==2:
-                    canva.create_line(b*longueur_case, a*largeur_case,
-                                    b*longueur_case, (a+1)*largeur_case,
+                    canva.create_line(j*longueur_case+5, i*largeur_case+5,
+                                    j*longueur_case+5, (i+1)*largeur_case+5,
                                     fill ='red', width = 2)
                 if haut==1:
-                    canva.create_line(b*longueur_case, a*largeur_case,
-                                    b*longueur_case, (a-1)*largeur_case,
+                    canva.create_line(j*longueur_case+5, i*largeur_case+5,
+                                    j*longueur_case+5, (i-1)*largeur_case+5,
                                     fill ='black', width = 2)
                 if haut==2:
-                    canva.create_line(b*longueur_case, a*largeur_case,
-                                    b*longueur_case, (a-1)*largeur_case,
+                    canva.create_line(j*longueur_case+5, i*largeur_case+5,
+                                    j*longueur_case+5, (i-1)*largeur_case+5,
                                     fill ='red', width = 2)
-    fenetre.after(1000, updateEverySecond)
+    for i in robList:
+        canva.delete(cercleList[0])
+        cercleList.pop(0)
+        p = i.getPresentPos()
+        cercleList.append(canva.create_oval((p[1] * longueur_case)-2+5, (p[0] * largeur_case)-2+5, (p[1] * longueur_case)+2+5, (p[0] * largeur_case)+2+5, fill='red'))
+    fenetre.after(500, updateEverySecond)
 
 
 #--------------------------------------------------------MAIN----------------------------------------------------------------#
@@ -264,31 +362,52 @@ fenetre.title("Affichage du Labyrinthe")
 W = 500
 H = 400
 
+
+longueurX = 10
+longueurY = 10
+
+longueur_case = (W//(longueurX))-10
+largeur_case = (H//(longueurY))-10
+
 canva = tkinter.Canvas(fenetre, width = W, height = H)
 canva.pack()
 
+cercleList = [0,0]
 robList = []
 for i in range(n):
     robList.append(Robot(i))
 
-longueurX = 10
-longueurY = 10
+
 tableau = []
-for i in range(longueurY):
+for i in range(longueurY+1):
     tableau.append([Node()])
-    for j in range(longueurX-1):
+    for j in range(longueurX):
         tableau[i].append(Node())
 
 tableau[0][0].setState(2)
+tableau[0][0].setEdges([2,0,0,2])
 robList[1].setDir(1)
 robList[0].setDir(2)
 
-tableau[0][longueurX-1].setEdges([2,2,0,0])
-tableau[longueurY-1][0].setEdges([0,0,2,2])
-tableau[longueurY-1][longueurX-1].setEdges([0,2,2,0])
+for i in range(longueurY):
+    for j in range(longueurX):
+        if (i==0):
+            tableau[i][j].setNeigh([0,-1,-1,-1])
+            tableau[i][j].setEdges([2,-1,-1,-1])
+        if (j==0):
+            tableau[i][j].setNeigh([-1,-1,-1,0])
+            tableau[i][j].setEdges([-1,-1,-1,2])
+        if (j==longueurX-1):
+            tableau[i][j].setNeigh([-1,0,-1,-1])
+            tableau[i][j].setEdges([-1,2,-1,-1])
+        if (i==longueurY-1):
+            tableau[i][j].setNeigh([-1,-1,0,-1])
+            tableau[i][j].setEdges([-1,-1,2,-1])
+        tableau[i][j].setNeigh([tableau[i-1][j],tableau[i][j+1],tableau[i+1][j],tableau[i][j-1]])
 
 robList[1].move(1)
 robList[0].move(2)
+
 
 updateEverySecond()
 fenetre.mainloop()
