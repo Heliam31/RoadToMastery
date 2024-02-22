@@ -23,7 +23,7 @@ const int QTR8RC_IR_LEDS[8] = {IR1_LED, IR2_LED, IR3_LED, IR4_LED, IR5_LED, IR6_
 #define QTR8RC_PERIOD (QTR8RC_TIME*APB1_CLK)/QTR8RC_PSC
 
 // SENSOR VALUES
-const int TIMEOUT = QTR8RC_PERIOD;
+const int IR_TIMEOUT = QTR8RC_PERIOD;
 int calMaxValues[QTR8RC_NB_SENSORS] = {0};
 int calMinValues[QTR8RC_NB_SENSORS] = {0};
 
@@ -95,10 +95,10 @@ void init_tim4(){
 void qtr8rc_init(void) {
     init_gpio();
 	init_tim4();
-    set_tab(calMinValues, QTR8RC_NB_SENSORS, TIMEOUT);    
+    set_tab(calMinValues, QTR8RC_NB_SENSORS, IR_TIMEOUT);    
     // Init minirValues
     // for (int i = 0; i < QTR8RC_NB_SENSORS; i++) {
-    //     calMinValues[i] = TIMEOUT;
+    //     calMinValues[i] = IR_TIMEOUT;
     //     delay_ms(100); // ????
     // }
 }
@@ -112,7 +112,7 @@ void normalize(int *irValues) {
         calmin = calMinValues[i];
         calmax = calMaxValues[i];
 
-        // Appliquer la formule de calibration
+        // Calibration "formula" by Pololu
         int denominator = calmax - calmin;
         int value = 0;
 
@@ -158,7 +158,7 @@ void measure(int *irValues, const Calibration calibration) {
     uint32_t elapsedTime = 0; 
     uint32_t currentTime = 0;
 
-    while (((currentTime=TIM4_CNT) + elapsedTime) < TIMEOUT) {
+    while (((currentTime=TIM4_CNT) + elapsedTime) < IR_TIMEOUT) {
         elapsedTime = currentTime - startTime; // Compute the elapsed time
 
         // Compute each led's value
@@ -183,7 +183,7 @@ void measure(int *irValues, const Calibration calibration) {
 **  @return: None
 */
 void qtr8rc_read(int *irValues, const Calibration calibration) {
-    set_tab(irValues, QTR8RC_NB_SENSORS, TIMEOUT);
+    set_tab(irValues, QTR8RC_NB_SENSORS, IR_TIMEOUT);
     // Turn on the IR LEDs
     led_turn_on(ON_LED);
     // Set the I/O line to an output
@@ -191,7 +191,7 @@ void qtr8rc_read(int *irValues, const Calibration calibration) {
     // Drive the I/O line high
     drive_high(QTR8RC_IR_LEDS);
     // Allow at least 10 μs for the sensor output to rise
-    delay_us(100);
+    delay_us(10);
     // Make the I/O line an input (high impedance)
     input_mode(QTR8RC_IR_LEDS);
     // Start the timer for the measure

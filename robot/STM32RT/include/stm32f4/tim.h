@@ -333,6 +333,20 @@
 // #define TIM6_DMAR		TIM_IOREG(6, 0x4C)
 // #define TIM6_OR			TIM_IOREG(6, 0x50)
 
+// TIM7
+#define TIM7_CR1		TIM_IOREG(7, 0x00)
+#define TIM7_CR2		TIM_IOREG(7, 0x04)
+// #define TIM6_SMCR		TIM_IOREG(6, 0x08)
+#define TIM7_DIER		TIM_IOREG(7, 0x0C)
+#define TIM7_SR			TIM_IOREG(7, 0x10)
+#define TIM7_EGR		TIM_IOREG(7, 0x14)
+// #define TIM6_CCMR1		TIM_IOREG(6, 0x18)
+// #define TIM6_CCMR2		TIM_IOREG(6, 0x1C)
+// #define TIM6_CCER		TIM_IOREG(6, 0x20)
+#define TIM7_CNT		TIM_IOREG(7, 0x24)
+#define TIM7_PSC		TIM_IOREG(7, 0x28)
+#define TIM7_ARR		TIM_IOREG(7, 0x2C)
+
 // interrupts
 #define TIM1_BRK_IRQ	24
 #define TIM1_UP_IRQ		25

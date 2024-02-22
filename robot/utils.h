@@ -16,6 +16,7 @@
 // timer
 #define PSC_42000 42000
 #define PSC_42 42
+#define DEFAULT_HYPERPERIOD 125  // Default Hyperperiod Sonar + Color + IR
 
 // =============== led & button ===============
 #define GREEN_LED	12
@@ -57,6 +58,9 @@ int sign(int x);
 void init_tim6(void);
 void delay_ms(int ms);
 void delay_us(int us);
+
+void init_tim7(void);
+void start_sync(int hyperperiod);
 void sync(void);
 
 void led_init(int led);

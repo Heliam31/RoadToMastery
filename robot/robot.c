@@ -12,13 +12,16 @@
 // INIT
 void enable_clk(void) {
     RCC_AHB1ENR |= RCC_GPIOAEN;
-	RCC_AHB1ENR |= RCC_GPIODEN;
+    RCC_AHB1ENR |= RCC_GPIOBEN;
 	RCC_AHB1ENR |= RCC_GPIOCEN;
+	RCC_AHB1ENR |= RCC_GPIODEN;
 
 	RCC_APB1ENR |= RCC_TIM2EN;
 	RCC_APB1ENR |= RCC_TIM3EN;
     RCC_APB1ENR |= RCC_TIM4EN;
+    RCC_APB1ENR |= RCC_TIM5EN;
 	RCC_APB1ENR |= RCC_TIM6EN;
+	RCC_APB1ENR |= RCC_TIM7EN; // for sync
 
     RCC_APB2ENR |= RCC_ADC1EN;
 }
@@ -30,6 +33,7 @@ void init(void) {
     color_init();
     
     init_tim6();
+    init_tim7();
     led_init(GREEN_LED);
     led_init(ORANGE_LED);
     led_init(RED_LED);
@@ -38,21 +42,22 @@ void init(void) {
 }
 
 void calibration(void) {
+    printf("Waiting for calibration !\n");
     led_turn_on(GREEN_LED);
     button_wait(BUTTON);
     led_turn_off(GREEN_LED);
 
-    // display_calMinValues();
-    // display_calMaxValues();
+    display_calMinValues();
+    display_calMaxValues();
 
     printf("Calibrating...\n");
 
-    motor_set_speeds(-25, 25);
+    motor_set_speeds(-26, 26);
 
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 250; i++) {
         qtr8rc_calibrate();
         // printf("DELAY MS\n");
-        delay_ms(5);
+        delay_ms(3);
         // printf("MS DOWN\n");
     }
 
@@ -144,24 +149,31 @@ int main (void) {
     // msg_t *rmsg = {ESP32_ADDR, {0}, 8};
 
     State state = FOLLOW;
-    Direction direction = BACK;
+    Direction direction = FRONT;
     roads[BACK] = 1;
+
+    unsigned int distance = 0;
+    int isR = 0, isG = 0, isB = 0;
 
     led_turn_on(GREEN_LED);
     button_wait(BUTTON);
     led_turn_off(GREEN_LED);
 
-    while(1) {
-        // start_timer(); // TODO
-        
-        qtr8rc_read(irValues, OFF);
-        // sonar_read(&sonarValue); // TODO ???
+    int read_frequency = 0; // Sonar and colors read frequency
 
-        compute_position(&position, irValues);
-        pid_compute_speeds(&leftSpeed, &rightSpeed, position);
+    while(1) {
+        start_sync(DEFAULT_HYPERPERIOD);
+
+        // IR READS
+        qtr8rc_read(irValues, OFF);
+
+        // printf("->%d \n",position);
+        // display_irValues(irValues);
         
         switch(state) {
             case FOLLOW:
+                compute_position(&position, irValues);
+                pid_compute_speeds(&leftSpeed, &rightSpeed, &position);
                 get_avaible_roads(roads, irValues);
                 // printf("->%d \n",position);
                 // display_irValues(irValues);
@@ -277,8 +289,18 @@ int main (void) {
         // printf("%d;%d\n", leftSpeed, rightSpeed);
         // display_direction(direction);
         // display_state(state);
-
         motor_set_speeds(leftSpeed, rightSpeed);
-        // sync();
+
+        // OTHER READS
+        if(read_frequency == 5) {
+            sonar_read(&distance);
+            color_read(&isG, &isB, &isR);
+            read_frequency = 0;
+        }
+        // while (1);
+        // printf("distance : %d\n",distance);
+        // printf("%d | %d | %d\n",isR,isG,isB);
+        read_frequency++;
+        sync();
     }
 }

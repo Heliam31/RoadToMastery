@@ -121,9 +121,29 @@ void delay_us(int us) {
     TIM6_SR &= ~TIM_UIF; // Clear the update event flag
 }
 
+/*
+*  @brief: Configure TIM7 to generate a delay in miliseconds
+**  @param: None
+**  @return: None
+*/
+void init_tim7(void) {
+    TIM7_CR1 &= ~TIM_CEN; // Stop the timer
+    TIM7_PSC = PSC_42000-1; // 1kHz -> 1000 ticks per second -> 1 tick = 1ms
+    TIM7_SR &= ~TIM_UIF; // Clear the update event flag
+    TIM7_ARR = DEFAULT_HYPERPERIOD;
+}
+
+void start_sync(int hyperperiod) {
+    TIM7_ARR = hyperperiod;
+    TIM7_CNT = 0; // Reset the counter
+    TIM7_CR1 = TIM_CEN; // Start the timer
+    TIM7_SR = 0; // Clear the update event flag
+}
+
+// Wait to sync
 void sync(void) {
-    while((TIM6_SR & TIM_UIF) == 0) NOP;
-    TIM6_SR &= ~TIM_UIF;
+    while((TIM7_SR & TIM_UIF) == 0) NOP;
+    TIM7_SR &= ~TIM_UIF;
 }
 
 // --------------- led ---------------

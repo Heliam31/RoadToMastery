@@ -1,10 +1,10 @@
 
 # configuration
 LOG = stm32f4.log
-GDB = gdb-multiarch
+# GDB = gdb-multiarch
 STM32_ROOT = STM32RT
-GDB = gdb
-#GDB = gdb-multiarch
+# GDB = gdb
+GDB = gdb-multiarch
 GDB_FLAGS=-command $(STM32_ROOT)/scripts/gdbinit
 
 # compiler configuration
