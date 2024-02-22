@@ -312,6 +312,26 @@
 #define TIM5_DMAR		TIM_IOREG(5, 0x4C)
 #define TIM5_OR			TIM_IOREG(5, 0x50)
 
+// TIM6
+#define TIM6_CR1		TIM_IOREG(6, 0x00)
+#define TIM6_CR2		TIM_IOREG(6, 0x04)
+// #define TIM6_SMCR		TIM_IOREG(6, 0x08)
+#define TIM6_DIER		TIM_IOREG(6, 0x0C)
+#define TIM6_SR			TIM_IOREG(6, 0x10)
+#define TIM6_EGR		TIM_IOREG(6, 0x14)
+// #define TIM6_CCMR1		TIM_IOREG(6, 0x18)
+// #define TIM6_CCMR2		TIM_IOREG(6, 0x1C)
+// #define TIM6_CCER		TIM_IOREG(6, 0x20)
+#define TIM6_CNT		TIM_IOREG(6, 0x24)
+#define TIM6_PSC		TIM_IOREG(6, 0x28)
+#define TIM6_ARR		TIM_IOREG(6, 0x2C)
+// #define TIM6_CCR1		TIM_IOREG(6, 0x34)
+// #define TIM6_CCR2		TIM_IOREG(6, 0x38)
+// #define TIM6_CCR3		TIM_IOREG(6, 0x3C)
+// #define TIM6_CCR4		TIM_IOREG(6, 0x40)
+// #define TIM6_DCR		TIM_IOREG(6, 0x48)
+// #define TIM6_DMAR		TIM_IOREG(6, 0x4C)
+// #define TIM6_OR			TIM_IOREG(6, 0x50)
 
 // interrupts
 #define TIM1_BRK_IRQ	24
