@@ -19,7 +19,7 @@ const int QTR8RC_IR_LEDS[8] = {IR1_LED, IR2_LED, IR3_LED, IR4_LED, IR5_LED, IR6_
 
 // TIM4
 #define QTR8RC_TIME 0.0025
-#define QTR8RC_PSC 2
+#define QTR8RC_PSC PSC_42
 #define QTR8RC_PERIOD (QTR8RC_TIME*APB1_CLK)/QTR8RC_PSC
 
 // SENSOR VALUES
@@ -117,11 +117,11 @@ void normalize(int *irValues) {
         int value = 0;
 
         if (denominator != 0) {
-            value = ((irValues[i] - calmin) * 1000) / denominator;
+            value = ((irValues[i] - calmin) * 2000) / denominator;
         }
 
         if (value < 0) { value = 0; } 
-        else if (value > 1000) { value = 1000; }
+        else if (value > 2000) { value = 2000; }
 
         irValues[i] = value;
     }

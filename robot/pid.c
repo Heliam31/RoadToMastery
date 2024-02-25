@@ -4,17 +4,17 @@
 
 /*==Values that work==*/
 /*
-batLev: 75&100 (old Ki),        50&50
-  norm: no (old Ki),            no
- speed: 27,18,-5/-13 (old Ki)   27,18,-13
-    Kp: 0.15 (old Ki)           0.039
-    Ki: 0 (old Ki)              0.001
-    Kd: 2 (old Ki)              2.69
+batLev: 75&100 (old Ki),        50&50           75&75           100&75
+  norm: no (old Ki),            no              no              no
+ speed: 27,18,-5/-13 (old Ki)   27,18,-13       23,18,-1        23,18,-1
+    Kp: 0.15 (old Ki)           0.039           1.82            0.069
+    Ki: 0 (old Ki)              0.001           0.045           0.002
+    Kd: 2 (old Ki)              2.69            2.69            2
 */
 
-#define Kp 1.82 // 0.086
-#define Ki 0.045 // 0.007 / 0.6
-#define Kd 2.69 // 2.69
+#define Kp 0.069 // 0.086
+#define Ki 0.002 // 0.007 / 0.6
+#define Kd 2 // 2.69
 #define REFERENCE 3500
 
 #define LEFT_MOTOR_OFFSET 0

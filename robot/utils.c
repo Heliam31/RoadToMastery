@@ -95,6 +95,8 @@ void init_tim6(void) {
 */
 void delay_ms(int ms) {
     TIM6_CR1 &= ~TIM_CEN; // Stop the timer
+    TIM6_PSC = PSC_42000-1;
+    TIM6_SR &= ~TIM_UIF; // Clear the update event flag
     TIM6_ARR = ms; // Set the auto-reload value
     // printf("ARR=%d\n", TIM6_ARR);
     TIM6_CR1 = TIM_CEN; // Start the timer
@@ -111,6 +113,7 @@ void delay_ms(int ms) {
 */
 void delay_us(int us) { 
     TIM6_CR1 &= ~TIM_CEN; // Stop the timer
+    TIM6_PSC = PSC_42-1;
     TIM6_SR &= ~TIM_UIF; // Clear the update event flag
     TIM6_ARR = us; // Set the auto-reload value
     // printf("ARR=%d\n", TIM6_ARR);
@@ -129,8 +132,9 @@ void delay_us(int us) {
 void init_tim7(void) {
     TIM7_CR1 &= ~TIM_CEN; // Stop the timer
     TIM7_PSC = PSC_42000-1; // 1kHz -> 1000 ticks per second -> 1 tick = 1ms
+    TIM7_ARR = 500; // 500 ms
+    TIM7_EGR = TIM_UG; // RESET TIMER
     TIM7_SR &= ~TIM_UIF; // Clear the update event flag
-    TIM7_ARR = DEFAULT_HYPERPERIOD;
 }
 
 void start_sync(int hyperperiod) {
@@ -150,10 +154,12 @@ void sync(void) {
 void led_init(int led) {
 	GPIOD_MODER = REP_BITS(GPIOD_MODER, led*2, 2, GPIO_MODER_OUT);
 	GPIOD_OTYPER &= ~(1<<led);
+    delay_us(200);
 }
 
 void led_turn_on(int led) {
     GPIOD_BSRR = 1 << led;
+    delay_us(200);
 }
 
 void led_turn_off(int led) {
@@ -253,4 +259,8 @@ void set_tab(int *tab, int size, int value) {
     for (int i = 0; i < size; i++) {
         tab[i] = value;
     }
+}
+
+int map(int x, int in_min, int in_max, int out_min, int out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }

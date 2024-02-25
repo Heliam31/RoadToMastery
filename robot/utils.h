@@ -76,6 +76,7 @@ void display_direction(Direction direction);
 
 // =============== misc ===============
 void set_tab(int *tab, int size, int value);
+int map(int x, int in_min, int in_max, int out_min, int out_max);
 
 
 #endif

@@ -6,8 +6,12 @@
 
 #include "utils.h"
 
+// PROTOTYPES
+void init_tim7_and_interrupts();
 
 // GLOBALS
+unsigned int distance = 0;
+volatile int TIM7_triggered = 0;
 
 // INIT
 void enable_clk(void) {
@@ -30,10 +34,10 @@ void init(void) {
     qtr8rc_init();
     motor_init();
     sonar_init();
-    color_init();
+    // color_init();
     
     init_tim6();
-    init_tim7();
+    init_tim7_and_interrupts();
     led_init(GREEN_LED);
     led_init(ORANGE_LED);
     led_init(RED_LED);
@@ -41,8 +45,33 @@ void init(void) {
     button_init(BUTTON);
 }
 
-void calibration(void) {
-    printf("Waiting for calibration !\n");
+// INTERUPTS
+void handle_SONAR() {
+    TIM7_SR = ~TIM_UIF;
+    TIM7_triggered = 1;
+}
+
+void init_tim7_and_interrupts() {
+	DISABLE_IRQS;
+
+	NVIC_ICER(TIM7_IRQ >> 5) = 1 << (TIM7_IRQ & 0X1f);
+	NVIC_IRQ(TIM7_IRQ) = (uint32_t)handle_SONAR;
+	NVIC_IPR(TIM7_IRQ) = 0;
+
+	// purge pending IRQ
+	NVIC_ICPR(TIM7_IRQ >> 5) = 1 << (TIM7_IRQ & 0X1f);
+
+    init_tim7();
+
+	// enable IRQ
+	NVIC_ISER(TIM7_IRQ >> 5) = 1 << (TIM7_IRQ & 0X1f);
+	TIM7_DIER = TIM_UIE;
+	
+}
+
+// CALIB
+void calibrate_ir(void) {
+    printf("Waiting for IR calibration !\n");
     led_turn_on(GREEN_LED);
     button_wait(BUTTON);
     led_turn_off(GREEN_LED);
@@ -54,11 +83,9 @@ void calibration(void) {
 
     motor_set_speeds(-26, 26);
 
-    for (int i = 0; i < 250; i++) {
+    for (int i = 0; i < 30; i++) {
         qtr8rc_calibrate();
-        // printf("DELAY MS\n");
         delay_ms(3);
-        // printf("MS DOWN\n");
     }
 
     display_calMinValues();
@@ -67,11 +94,27 @@ void calibration(void) {
     printf("Ready !\n");
 
     motor_set_speeds(0, 0);
-    // delay_ms(1000); // 1s
 }
 
+// MISC
+void start(void) {
+    // Start
+    led_turn_on(GREEN_LED);
+    button_wait(BUTTON);
+    led_turn_off(GREEN_LED);
+
+    // Start interruptions
+	ENABLE_IRQS;
+	TIM7_CR1 = TIM_CEN;
+
+    // Reset distance value
+    distance = 0;
+}
+
+// STATE MACHINE
 void move_on_line(int *leftSpeed, int *rightSpeed, Direction *direction) {
-    switch (*direction) {
+    switch (*direction) 
+{
     case BACK:
         led_turn_on(ORANGE_LED);
         *leftSpeed = -17;
@@ -132,7 +175,7 @@ int on_junction(int *roads){
 int main (void) {
     enable_clk();
     init();
-    calibration();
+    calibrate_ir();
 
     int irValues [8] = {0};
     int sonarValue = 0;
@@ -149,21 +192,12 @@ int main (void) {
     // msg_t *rmsg = {ESP32_ADDR, {0}, 8};
 
     State state = FOLLOW;
-    Direction direction = FRONT;
+    Direction direction = BACK;
     roads[BACK] = 1;
 
-    unsigned int distance = 0;
-    int isR = 0, isG = 0, isB = 0;
-
-    led_turn_on(GREEN_LED);
-    button_wait(BUTTON);
-    led_turn_off(GREEN_LED);
-
-    int read_frequency = 0; // Sonar and colors read frequency
+    start();
 
     while(1) {
-        start_sync(DEFAULT_HYPERPERIOD);
-
         // IR READS
         qtr8rc_read(irValues, OFF);
 
@@ -286,21 +320,16 @@ int main (void) {
         }
         // display_irValues(irValues);
         // printf("%d:", position);
-        // printf("%d;%d\n", leftSpeed, rightSpeed);
+        // printf("left: %d | right: %d\n",leftSpeed, rightSpeed);
         // display_direction(direction);
         // display_state(state);
         motor_set_speeds(leftSpeed, rightSpeed);
 
-        // OTHER READS
-        if(read_frequency == 5) {
+        if (TIM7_triggered) {
             sonar_read(&distance);
-            color_read(&isG, &isB, &isR);
-            read_frequency = 0;
+            if (distance < 11) state = STOP;
+            // printf("distance: %d\n",distance);
+            TIM7_triggered = 0;
         }
-        // while (1);
-        // printf("distance : %d\n",distance);
-        // printf("%d | %d | %d\n",isR,isG,isB);
-        read_frequency++;
-        sync();
     }
 }
