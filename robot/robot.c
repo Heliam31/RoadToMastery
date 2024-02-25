@@ -5,11 +5,12 @@
 #include "sonar.h"
 
 #include "utils.h"
+#include "I2C.h"
 
 // PROTOTYPES
 void init_tim7_and_interrupts();
 
-// GLOBALS
+#define NB_ROADS 4
 unsigned int distance = 0;
 volatile int TIM7_triggered = 0;
 
@@ -23,10 +24,12 @@ void enable_clk(void) {
 	RCC_APB1ENR |= RCC_TIM2EN;
 	RCC_APB1ENR |= RCC_TIM3EN;
     RCC_APB1ENR |= RCC_TIM4EN;
-    RCC_APB1ENR |= RCC_TIM5EN;
+	RCC_APB1ENR |= RCC_TIM5EN;
 	RCC_APB1ENR |= RCC_TIM6EN;
 	RCC_APB1ENR |= RCC_TIM7EN; // for sync
 
+    RCC_APB1ENR |= RCC_I2C1EN | RCC_TIM5EN;
+	RCC_AHB1ENR |= RCC_GPIOBEN;
     RCC_APB2ENR |= RCC_ADC1EN;
 }
 
@@ -35,6 +38,7 @@ void init(void) {
     motor_init();
     sonar_init();
     // color_init();
+    i2c_config(8, 9);
     
     init_tim6();
     init_tim7_and_interrupts();
@@ -117,59 +121,57 @@ void move_on_line(int *leftSpeed, int *rightSpeed, Direction *direction) {
 {
     case BACK:
         led_turn_on(ORANGE_LED);
-        *leftSpeed = -17;
-        *rightSpeed = 17;
+        *leftSpeed = -15;
+        *rightSpeed = 15;
         break;
     case FRONT:
         led_turn_on(BLUE_LED);
-        *leftSpeed = 17;
-        *rightSpeed = 17;
+        *leftSpeed = 25;
+        *rightSpeed = 25;
         break;
     case LEFT:
         led_turn_on(RED_LED);
-        *leftSpeed = -17;
-        *rightSpeed = 17;
+        *leftSpeed = -15;
+        *rightSpeed = 15;
         break;
     case RIGHT:
         led_turn_on(GREEN_LED);
-        *leftSpeed = 17;
-        *rightSpeed = -17;
+        *leftSpeed = 15;
+        *rightSpeed = -15;
         break;
     default:
         break;
     }
-}
-
-int on_road(Direction *direction, int *irValues) {
-    switch (*direction) {
-    case BACK:
-        if (irValues[0] > 1000 && irValues[1] > 1000) {
-            return 1;
-        }
-        break;
-    case FRONT:
-        if (irValues[6] > 1000 && irValues[7] > 1000) {
-            return 1;
-        }
-        break;
-    case LEFT:
-        if (irValues[0] > 1000 && irValues[7] > 1000) {
-            return 1;
-        }
-        break;
-    case RIGHT:
-        if (irValues[6] > 1000 && irValues[1] > 1000) {
-            return 1;
-        }
-        break;
-    default:
-        break;
-    }
-    return 0;
 }
 
 int on_junction(int *roads){
     return roads[LEFT] | roads[RIGHT]; 
+}
+
+int on_road(int *irValues) {
+    int onRoad = 0;
+    for (int i = 0; i < 8; i++) {
+        if (irValues[i] == 1000) {
+            onRoad = 1;
+            i = 8;
+        }
+    }
+    return onRoad;
+}
+
+State choose_direction(int reg){
+    if(reg == 1){
+        return RIGHT;
+    }else if (reg == 2)
+    {
+        return FRONT;
+    }else if (reg == 4)
+    {
+        return LEFT;
+    }else if (reg == 8)
+    {
+        return BACK;
+    }
 }
 
 int main (void) {
@@ -188,62 +190,65 @@ int main (void) {
 
     int stop = 0;
 
-    // msg_t *tmsg = {ESP32_ADDR, {0}, 8};
-    // msg_t *rmsg = {ESP32_ADDR, {0}, 8};
-
     State state = FOLLOW;
-    Direction direction = BACK;
+    Direction direction = FRONT;
     roads[BACK] = 1;
 
     start();
 
-    while(1) {
-        // IR READS
-        qtr8rc_read(irValues, OFF);
+    int tmpRoads[NB_ROADS] = {0};
 
-        // printf("->%d \n",position);
-        // display_irValues(irValues);
+    while(1) {
+        
+        qtr8rc_read(irValues, OFF);
+        compute_position(&position, irValues);
         
         switch(state) {
             case FOLLOW:
-                compute_position(&position, irValues);
                 pid_compute_speeds(&leftSpeed, &rightSpeed, &position);
                 get_avaible_roads(roads, irValues);
-                // printf("->%d \n",position);
-                // display_irValues(irValues);
-                // if ((on_junction(roads) == 0) && !stop) {
-                //     compute_position(&position, irValues);
-                //     pid_compute_speeds(&leftSpeed, &rightSpeed, position);
-                //     // printf("%d %d %d\n", position, leftSpeed, rightSpeed);
-                // } else 
                 if ((on_junction(roads) == 0) && stop) {
                     state = STOP;
-                    for (int i = 0; i < 4; i++) {
-                        // tmsg->data[i] = roads[i];
-                    }
+                    motor_disable(M_LEFT); leftSpeed = 0;
+                    motor_disable(M_RIGHT); rightSpeed = 0;
                     stop = 0;
                 } else if ((on_junction(roads) == 1)) {
+                    tmpRoads[LEFT] = roads[LEFT];
+                    tmpRoads[RIGHT] = roads[RIGHT];
                     stop = 1;
                 }
                 break;
 
             case STOP:
-                leftSpeed = 0;
-                rightSpeed = 0;
-                // i2c_send(tmsg); // TODO ???
-                // i2c_receive(rmsg); // TODO ??? 
-                // get_direction(&direction, rmsg); // TODO
+                delay_ms(10);
+                // motor_disable(M_LEFT); leftSpeed = 0;
+                // motor_disable(M_RIGHT); rightSpeed = 0;
+                // button_wait(BUTTON);
+                
+                // ///////////// I2C AJOUT /////////////////
+                // uint8_t reg_send[2] = { 1, 0b0101}; //reg à send
+                // uint8_t reg_receive[1] = {0}; //reg pour demander des données
+                // // printf("Loop\n");
+                // i2c_send(ESP32_ADDR, reg_send , 2); //on send des données
+                // // printf("bien send\n");
+                // i2c_receive(ESP32_ADDR, reg_receive, 1); //on demande des données
+                // // printf("receive\n");
+                // while((TIM5_SR & TIM_UIF) == 0);
+         		// TIM5_SR = 0;
+                // direction = choose_direction(reg_receive[0]);
+                // // printf("La direction est : %d\n", direction);
+                // /////////////////////////////////////////
+
                 if (direction == FRONT) {
-                    state = FOLLOW;
+                    if ((on_road(irValues) == 1) && roads[FRONT]) {
+                        state = FOLLOW;
+                    } // else = no front road -> STOP 
                 } else {
                     state = TURN;
                 }
                 break;
             
             case TURN:
-                // delay_ms(50);
-                button_wait(BUTTON);
-                move_on_line(&leftSpeed, &rightSpeed, &direction);
                 if (direction == LEFT) {
                     state = S_LEFT;
                 } else if (direction == RIGHT) {
@@ -251,6 +256,7 @@ int main (void) {
                 } else {
                     state = S_BACK;
                 }
+                move_on_line(&leftSpeed, &rightSpeed, &direction);
                 break;
 
             case S_RIGHT:
@@ -266,10 +272,11 @@ int main (void) {
                 break;
             
             case S_BACK:
-                // if (direction != LEFT) {
-                //     state = S_LEFT;
-                // } else
-                if (irValues[7] == 1000) {
+                if (tmpRoads[LEFT] != 1) {
+                    tmpRoads[LEFT] = 0;
+                    tmpRoads[RIGHT] = 0;
+                    state = S_LEFT;
+                } else if (irValues[7] == 1000) {
                     state = CHECK8_WHITE;
                 }
                 break;
@@ -288,13 +295,11 @@ int main (void) {
             
             case CHECK4:
                 if (irValues[3] == 1000) {
-                    motor_set_speeds(-8, -8);
                     state = FOLLOW;
                 }
                 break;
             
             case CHECK5:
-                motor_set_speeds(-8, -8);
                 if (irValues[4] == 1000) {
                     state = FOLLOW;
                 }

@@ -70,6 +70,8 @@ void pid_compute_speeds(int *motorLeftSpeed, int *motorRightSpeed, const int *po
 
     *motorLeftSpeed = max(-1, min(*motorLeftSpeed, maxSpeedLeft));
     *motorRightSpeed = max(-1, min(*motorRightSpeed, maxSpeedRight));
+    *motorLeftSpeed = max(-1, min(*motorLeftSpeed, maxSpeedLeft));
+    *motorRightSpeed = max(-1, min(*motorRightSpeed, maxSpeedRight));
 
     // printf("%d: %d,%d \n", *position, *motorLeftSpeed, *motorRightSpeed);
 }

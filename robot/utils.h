@@ -35,7 +35,7 @@ typedef enum state_e {
 typedef enum direction_e {FRONT, BACK, LEFT, RIGHT} Direction;
 
 // =============== i2c ===============
-#define ESP32_ADDR 0
+#define ESP32_ADDR 0x33
 
 typedef struct msg_s {
     int addr;
@@ -48,7 +48,8 @@ typedef struct msg_s {
 // =============== math ===============
 int abs(int x);
 int max(int a, int b);
-int min(int a, int b);
+int min(int a, int b
+);
 int clamp(int x, int a, int b);
 int sign(int x);
 

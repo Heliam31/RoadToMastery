@@ -29,7 +29,7 @@ int calMinValues[QTR8RC_NB_SENSORS] = {0};
 
 // =============== DEBUG ===============
 void display_calMaxValues(void){
-    printf("\nMax - ");
+    printf("Max - ");
     for (int i =0; i < QTR8RC_NB_SENSORS; i++) {
         printf("[%d]:%d, ", i+1, calMaxValues[i]);
     }
@@ -37,7 +37,7 @@ void display_calMaxValues(void){
 }
 
 void display_calMinValues(void){
-    printf("\nMin - ");
+    printf("Min - ");
     for (int i =0; i < QTR8RC_NB_SENSORS; i++) {
         printf("[%d]:%d, ", i+1, calMinValues[i]);
     }
@@ -45,7 +45,7 @@ void display_calMinValues(void){
 }
 
 void display_irValues(int* irValues){
-    printf("\nsensValues: \n");
+    printf("sensValues: \n");
     for (int i =0; i < QTR8RC_NB_SENSORS; i++) {
         printf("[%d]:%d, ", i+1, irValues[i]);
     }
@@ -267,7 +267,15 @@ void get_avaible_roads(int *roads, int *irValues) {
             sensors[i] = 0;
         }
     }
+    if (roads[LEFT]==1) {
+        roads[LEFT] = sensors[5] | sensors[6] | sensors[7];
+    } else {
+        roads[LEFT] = sensors[5] & sensors[6] & sensors[7];
+    }
+    if (roads[RIGHT]==1) {
+        roads[RIGHT] = sensors[0] | sensors[1] | sensors[2];
+    } else {
+        roads[RIGHT] = sensors[0] & sensors[1] & sensors[2];
+    }
     roads[FRONT] = sensors[3] | sensors[4];
-    roads[RIGHT] = sensors[0] & sensors[1] & sensors[2];
-    roads[LEFT] = sensors[5] & sensors[6] & sensors[7];
 }

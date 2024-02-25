@@ -10,8 +10,6 @@
 #define PC6 6 	// enA
 #define PC7 7 	// enB
 
-typedef enum motor_e {M_LEFT, M_RIGHT} Motor;
-
 typedef struct motor_s {
 	int en;
 	int in1;
