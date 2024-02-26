@@ -1,5 +1,6 @@
 import tkinter
 import csv
+import pandas as pd
 from bitstring import BitArray
 #--------------------------------------------------------FONCTIONS----------------------------------------------------------------#
 
@@ -131,7 +132,8 @@ class Robot:
                 elif (cdir == 3):
                     self.relativeDirection = 0
             self.direction = dir
-            fichier = open("answer.csv", 'a')
+            path = "answer" + str(self.id) +".csv"
+            fichier = open(path, 'w')
             cw = csv.writer(fichier)
             ident = bin(self.id)[2:]
             while(len(ident) < 2):
@@ -155,6 +157,7 @@ def recupInfo(i):
     #lecture csv recherche message du robot i
     id = i.getId()
     availinter=[0,0,0,0] #arriere, gauche, avant, droite 
+    lastread = 0
     with open('data.csv') as csvfile:
         spamreader = csv.reader(csvfile)
         for row in spamreader:
@@ -163,6 +166,8 @@ def recupInfo(i):
                 if(BitArray(bin=mess[2:5]).int == 1):
                     for x in range(4):
                         availinter[x] = int(row[0][x+5])
+
+
   
     #direction disponibles
     
