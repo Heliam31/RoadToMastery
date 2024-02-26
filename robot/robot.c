@@ -182,6 +182,24 @@ State choose_direction(int reg){
     }
 }
 
+int convert_road_bits(int *roads){
+    int res = 0;
+    if(roads[LEFT] == 1){
+        res += 4;
+    }
+    if(roads[RIGHT] == 1){
+        res += 1;
+    }
+    if(roads[BACK] == 1){
+        res += 8;
+    }
+    if(roads[FRONT] == 1){
+        res += 2;
+    }
+    return res;
+}
+
+
 int main (void) {
     enable_clk();
     init();
@@ -234,7 +252,7 @@ int main (void) {
                 button_wait(BUTTON);
                 
                 ///////////// I2C AJOUT /////////////////
-                uint8_t reg_send[2] = { 1, 0b0101}; //reg à send
+                uint8_t reg_send[2] = { 0b00100, convert_road_bits(roads)}; //reg à send
                 uint8_t reg_receive[1] = {0}; //reg pour demander des données
                 // printf("Loop\n");
                 i2c_send(ESP32_ADDR, reg_send , 2); //on send des données
