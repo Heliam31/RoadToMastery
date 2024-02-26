@@ -7,6 +7,9 @@
 #include "utils.h"
 #include "I2C.h"
 
+
+#define LINE 2000
+
 // PROTOTYPES
 void init_tim7_and_interrupts();
 
@@ -92,9 +95,9 @@ void calibrate_ir(void) {
 
     motor_set_speeds(-26, 26);
 
-    for (int i = 0; i < 30; i++) {
+    for (int i = 0; i < 20; i++) {
         qtr8rc_calibrate();
-        delay_ms(3);
+        delay_ms(2);
     }
 
     display_calMinValues();
@@ -156,7 +159,7 @@ int on_junction(int *roads){
 int on_road(int *irValues) {
     int onRoad = 0;
     for (int i = 0; i < 8; i++) {
-        if (irValues[i] == 1000) {
+        if (irValues[i] == LINE) {
             onRoad = 1;
             i = 8;
         }
@@ -225,23 +228,23 @@ int main (void) {
                 break;
 
             case STOP:
-                delay_ms(10);
-                // motor_disable(M_LEFT); leftSpeed = 0;
-                // motor_disable(M_RIGHT); rightSpeed = 0;
-                // button_wait(BUTTON);
+                // delay_ms(10);
+                motor_disable(M_LEFT); leftSpeed = 0;
+                motor_disable(M_RIGHT); rightSpeed = 0;
+                button_wait(BUTTON);
                 
-                // ///////////// I2C AJOUT /////////////////
-                // uint8_t reg_send[2] = { 1, 0b0101}; //reg à send
-                // uint8_t reg_receive[1] = {0}; //reg pour demander des données
-                // // printf("Loop\n");
-                // i2c_send(ESP32_ADDR, reg_send , 2); //on send des données
-                // // printf("bien send\n");
-                // i2c_receive(ESP32_ADDR, reg_receive, 1); //on demande des données
-                // // printf("receive\n");
-                // while((TIM5_SR & TIM_UIF) == 0);
-         		// TIM5_SR = 0;
-                // direction = choose_direction(reg_receive[0]);
-                // // printf("La direction est : %d\n", direction);
+                ///////////// I2C AJOUT /////////////////
+                uint8_t reg_send[2] = { 1, 0b0101}; //reg à send
+                uint8_t reg_receive[1] = {0}; //reg pour demander des données
+                // printf("Loop\n");
+                i2c_send(ESP32_ADDR, reg_send , 2); //on send des données
+                // printf("bien send\n");
+                i2c_receive(ESP32_ADDR, reg_receive, 1); //on demande des données
+                // printf("receive\n");
+                while((TIM5_SR & TIM_UIF) == 0);
+         		TIM5_SR = 0;
+                direction = choose_direction(reg_receive[0]);
+                // printf("La direction est : %d\n", direction);
                 // /////////////////////////////////////////
 
                 if (direction == FRONT) {
@@ -265,13 +268,13 @@ int main (void) {
                 break;
 
             case S_RIGHT:
-                if (irValues[0] == 1000) {
+                if (irValues[0] == LINE) {
                     state = CHECK2;
                 }
                 break;
             
             case S_LEFT:
-                if (irValues[7] == 1000) {
+                if (irValues[7] == LINE) {
                     state = CHECK7;
                 }
                 break;
@@ -281,58 +284,58 @@ int main (void) {
                     tmpRoads[LEFT] = 0;
                     tmpRoads[RIGHT] = 0;
                     state = S_LEFT;
-                } else if (irValues[7] == 1000) {
+                } else if (irValues[7] == LINE) {
                     state = CHECK8_WHITE;
                 }
                 break;
             
             case CHECK2:
-                if (irValues[1] == 1000) {
+                if (irValues[1] == LINE) {
                     state = CHECK3;
                 }
                 break;
             
             case CHECK3:
-                if (irValues[2] == 1000) {
+                if (irValues[2] == LINE) {
                     state = CHECK4;
                 }
                 break;
             
             case CHECK4:
-                if (irValues[3] == 1000) {
+                if (irValues[3] == LINE) {
                     state = FOLLOW;
                 }
                 break;
             
             case CHECK5:
-                if (irValues[4] == 1000) {
+                if (irValues[4] == LINE) {
                     state = FOLLOW;
                 }
                 break;
             
             case CHECK6:
-                if (irValues[5] == 1000) {
+                if (irValues[5] == LINE) {
                     state = CHECK5;
                 }
                 break;
             
             case CHECK7:
-                if (irValues[6] == 1000) {
+                if (irValues[6] == LINE) {
                     state = CHECK6;
                 }
                 break;
             
             case CHECK8_WHITE:
-                if (irValues[7] < 1000) {
+                if (irValues[7] < LINE) {
                     state = S_LEFT;
                 }
                 break;
         }
-        // display_irValues(irValues);
-        // printf("%d:", position);
-        // printf("left: %d | right: %d\n",leftSpeed, rightSpeed);
-        // display_direction(direction);
-        // display_state(state);
+        display_irValues(irValues);
+        printf("%d:", position);
+        printf("left: %d | right: %d\n",leftSpeed, rightSpeed);
+        display_direction(direction);
+        display_state(state);
         motor_set_speeds(leftSpeed, rightSpeed);
 
         if (TIM7_triggered) {

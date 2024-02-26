@@ -261,7 +261,7 @@ void compute_position(int *position, int *irValues) {
 void get_avaible_roads(int *roads, int *irValues) {
     int sensors[QTR8RC_NB_SENSORS] = {0};
     for (int i = 0; i < QTR8RC_NB_SENSORS; i++) {
-        if (irValues[i] == 1000) {
+        if (irValues[i] == 2000) {
             sensors[i] = 1;
         } else {
             sensors[i] = 0;
