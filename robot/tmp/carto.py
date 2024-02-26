@@ -1,6 +1,6 @@
 import tkinter
-import time
-
+import csv
+from bitstring import BitArray
 #--------------------------------------------------------FONCTIONS----------------------------------------------------------------#
 
 n = 2 #nombre de robots
@@ -8,13 +8,13 @@ n = 2 #nombre de robots
 class Node:
     def __init__(self):
         self.state = 0      #state : 0=pas encore visité, 1=déja visité, 2=voisins déja visités
-        self.neigh = [-1,-1,-1,-1]
+        self.neigh = [[-1,-1],[-1,-1],[-1,-1],[-1,-1]] #chaque case = un voisin
         self.visited = 0
         self.edges = [0,0,0,0] #arrete en  : 0 = up, 1 = right, 2 = down, 3 = left  # Si case=1 : ligneprise, case=3 lignepaprise ,case = 2:pas de ligne, case = 0:pas visité
     def setNeigh (self,n):
         for i in range(4):
-            if(n[i] != -1):
-                if (self.neigh[i] != 0):
+            if(n[i] != [-1,-1]):
+                if (self.neigh[i] != [0,0]):
                     self.neigh[i] = n[i]
     def getState(self):
         return self.state
@@ -26,12 +26,12 @@ class Node:
         for i in range(4):
             if((p[i]!=-1) and (self.edges[i]==0)):
                 self.edges[i] = p[i]
-    def visit(self,dir): #dir : 0 = up, 1 = right, 2 = down, 3 = left
+    def visit(self,dir,grid): #dir : 0 = up, 1 = right, 2 = down, 3 = left
         self.edges[dir] = 1
         self.state = 2
         for i in self.neigh:
-            if (i != 0):
-                if(i.getState()==0):
+            if (i != [0,0]):
+                if(grid[i[0]][i[1]].getState()==0):
                     self.state=1
 
 def valid(pos):
@@ -54,6 +54,8 @@ class Robot:
         self.history = [[0,0]]
         self.relativeDirection = 0  # Direction a prendre sur la réponse PC->Robot     0 = tout droit, 1 = right, 2 = demi tour, 3 = left   
         self.direction = 0   #Direction sur le tableau  0 = up, 1 = right, 2 = down, 3 = left
+    def getId(self):
+        return self.id
     def getLastPos(self):
         return self.lastPos
     def getPresentPos(self):
@@ -88,16 +90,16 @@ class Robot:
             cdir = 0
             if (self.lastPos[0]==(pos[0]-1)):
                 cdir = 2
-                tableau[pos[0]][pos[1]].visit(0)
+                tableau[pos[0]][pos[1]].visit(0,tableau)
             elif (self.lastPos[1]==(pos[1]+1)):
                 cdir = 3
-                tableau[pos[0]][pos[1]].visit(1)
+                tableau[pos[0]][pos[1]].visit(1,tableau)
             elif (self.lastPos[0]==(pos[0]+1)):
                 cdir = 0
-                tableau[pos[0]][pos[1]].visit(2)
+                tableau[pos[0]][pos[1]].visit(2,tableau)
             elif (self.lastPos[1]==(pos[1]-1)):
                 cdir = 1
-                tableau[pos[0]][pos[1]].visit(3)
+                tableau[pos[0]][pos[1]].visit(3,tableau)
             
             if (self.direction==0):
                 self.relativeDirection = cdir
@@ -129,24 +131,51 @@ class Robot:
                 elif (cdir == 3):
                     self.relativeDirection = 0
             self.direction = dir
+            fichier = open("answer.csv", 'a')
+            cw = csv.writer(fichier)
+            ident = bin(self.id)[2:]
+            while(len(ident) < 2):
+                ident = "0" + ident
+                
+            if self.relativeDirection == 0:
+                ident = ident+"0010"
+            if self.relativeDirection == 1:
+                ident = ident + "0001"
+            if self.relativeDirection == 2:
+                ident = ident + "1000"
+            if self.relativeDirection == 3:
+                ident = ident + "0100"
+            cw.writerow(ident)
+            fichier.close()
             return 1
         else:
             return 0
 
 def recupInfo(i):
     #lecture csv recherche message du robot i
+    id = i.getId()
+    availinter=[0,0,0,0] #arriere, gauche, avant, droite 
+    with open('data.csv') as csvfile:
+        spamreader = csv.reader(csvfile)
+        for row in spamreader:
+            mess = row[0]
+            if (BitArray(bin=mess[0:2]).int == id):
+                if(BitArray(bin=mess[2:5]).int == 1):
+                    for x in range(4):
+                        availinter[x] = int(row[0][x+5])
+  
     #direction disponibles
-    availinter=[1,1,1] #gauche, avant, droite 
+    
     pos = i.getPresentPos()
     
     if (i.direction==0):
-        availinter = [availinter[1],availinter[2],1,availinter[0]]
+        availinter = [availinter[2],availinter[3],availinter[0],availinter[1]]
     elif (i.direction==1):
-        availinter = [availinter[0],availinter[1],availinter[2],1]
+        availinter = [availinter[1],availinter[2],availinter[3],availinter[0]]
     elif (i.direction==2):
-        availinter = [1,availinter[0],availinter[1],availinter[2]]
+        availinter = [availinter[0],availinter[1],availinter[2],availinter[3]]
     elif (i.direction==3):
-        availinter = [availinter[2],1,availinter[0],availinter[1]]
+        availinter = [availinter[3],availinter[0],availinter[1],availinter[2]]
     if(pos[0]==0):
         availinter[0] = -1
     if(pos[0]==longueurX):
@@ -155,6 +184,7 @@ def recupInfo(i):
         availinter[3] = -1
     if(pos[1]==longueurY):
         availinter[1] = -1
+
     incr=0    
     for e in tableau[pos[0]][pos[1]].getEdges():
         if (e == 2):
@@ -197,7 +227,6 @@ def updateEverySecond():
             test = tableau[pos[0]+1][pos[1]]
         if (vp==3):
             test = tableau[pos[0]][pos[1]-1]
-        print(test.getState())
         if (test.getState() == 0):
             dir = vp
             break
@@ -222,7 +251,7 @@ def updateEverySecond():
             availinter[x]==2
     pos = i.getPresentPos()
     tableau[pos[0]][pos[1]].setEdges(availinter)
-    print(tableau[pos[0]][pos[1]+1].getState())
+
     val = []
     z = 0
     if(availinter[z]!=-1):
@@ -236,8 +265,9 @@ def updateEverySecond():
         if (z==3):
             test = tableau[pos[0]][pos[1]-1]
         if(test.getState() != 2):
+            
             val.append(z)
-    for z in range(3, 1, -1):
+    for z in range(3, 0, -1):
         if(availinter[z]!=-1):
             if (z==0):
                 test = tableau[pos[0]-1][pos[1]]
@@ -313,7 +343,6 @@ def updateEverySecond():
                     droite = 2
                 else:
                     droite = 0
-            # print(tableau[0][1].getState())  
             if now != 0:
                 
                 if droite==1:
@@ -392,18 +421,18 @@ robList[0].setDir(2)
 for i in range(longueurY):
     for j in range(longueurX):
         if (i==0):
-            tableau[i][j].setNeigh([0,-1,-1,-1])
+            tableau[i][j].setNeigh([[0,0],[-1,-1],[-1,-1],[-1,-1]])
             tableau[i][j].setEdges([2,-1,-1,-1])
         if (j==0):
-            tableau[i][j].setNeigh([-1,-1,-1,0])
+            tableau[i][j].setNeigh([[-1,-1],[-1,-1],[-1,-1],[0,0]])
             tableau[i][j].setEdges([-1,-1,-1,2])
         if (j==longueurX-1):
-            tableau[i][j].setNeigh([-1,0,-1,-1])
+            tableau[i][j].setNeigh([[-1,-1],[0,0],[-1,-1],[-1,-1]])
             tableau[i][j].setEdges([-1,2,-1,-1])
         if (i==longueurY-1):
-            tableau[i][j].setNeigh([-1,-1,0,-1])
+            tableau[i][j].setNeigh([[-1,-1],[-1,-1],[0,0],[-1,-1]])
             tableau[i][j].setEdges([-1,-1,2,-1])
-        tableau[i][j].setNeigh([tableau[i-1][j],tableau[i][j+1],tableau[i+1][j],tableau[i][j-1]])
+        tableau[i][j].setNeigh([[i-1,j],[i,j+1],[i+1,j],[i,j-1]])
 
 robList[1].move(1)
 robList[0].move(2)
