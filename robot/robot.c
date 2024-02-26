@@ -12,7 +12,10 @@ void init_tim7_and_interrupts();
 
 #define NB_ROADS 4
 unsigned int distance = 0;
+int isR = 0, isG = 0;
 volatile int TIM7_triggered = 0;
+int sonarFreq = 0;
+
 
 // INIT
 void enable_clk(void) {
@@ -37,7 +40,7 @@ void init(void) {
     qtr8rc_init();
     motor_init();
     sonar_init();
-    // color_init();
+    color_init();
     i2c_config(8, 9);
     
     init_tim6();
@@ -53,6 +56,8 @@ void init(void) {
 void handle_SONAR() {
     TIM7_SR = ~TIM_UIF;
     TIM7_triggered = 1;
+
+    sonarFreq = (sonarFreq + 1) % 12;
 }
 
 void init_tim7_and_interrupts() {
@@ -191,7 +196,7 @@ int main (void) {
     int stop = 0;
 
     State state = FOLLOW;
-    Direction direction = FRONT;
+    Direction direction = BACK;
     roads[BACK] = 1;
 
     start();
@@ -331,8 +336,21 @@ int main (void) {
         motor_set_speeds(leftSpeed, rightSpeed);
 
         if (TIM7_triggered) {
-            sonar_read(&distance);
-            if (distance < 11) state = STOP;
+            if (sonarFreq >= 7) {
+                sonar_read(&distance);
+                if (distance <= 15)
+                    state = STOP;
+                // printf("SONAR : %d\n",distance);
+            }
+            else {
+                color_read(&isR, &isG);
+                if (isR && !isG)
+                    state = STOP;
+                // printf("%d | %d\n",isR, isG);
+            }
+            
+            // sonar_read(&distance);
+            // if (distance < 11) state = STOP;
             // printf("distance: %d\n",distance);
             TIM7_triggered = 0;
         }

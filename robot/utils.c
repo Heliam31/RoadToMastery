@@ -132,7 +132,7 @@ void delay_us(int us) {
 void init_tim7(void) {
     TIM7_CR1 &= ~TIM_CEN; // Stop the timer
     TIM7_PSC = PSC_42000-1; // 1kHz -> 1000 ticks per second -> 1 tick = 1ms
-    TIM7_ARR = 500; // 500 ms
+    TIM7_ARR = 100; // 500 ms
     TIM7_EGR = TIM_UG; // RESET TIMER
     TIM7_SR &= ~TIM_UIF; // Clear the update event flag
 }
