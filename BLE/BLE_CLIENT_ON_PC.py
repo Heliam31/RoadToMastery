@@ -3,6 +3,7 @@
 # Copyleft https://tutoduino.fr/
 import argparse
 import asyncio
+import csv
 from bleak import BleakScanner
 from bleak import BleakClient
 UUIDRx = '2ce4b984-2934-4e3a-abe5-1034ac6ca3f1'
@@ -11,6 +12,7 @@ UUIDTx = '2ce4b985-2934-4e3a-abe5-1034ac6ca3f1'
 findRed = 0
 findGreen = 0
 findBlue = 0
+
 
 def couleur(robot):
     global findRed
@@ -21,7 +23,7 @@ def couleur(robot):
             case "100" : 
                 if(findRed==0) :
                     findRed=1
-                    resp=b'000'#au robot n°1 : stop
+                    resp=b'000'#au robot n°1 : stop and wait
                 else :
                     findRed=0
                     resp=b'011'#au robot n°2 : bouger
@@ -29,7 +31,7 @@ def couleur(robot):
             case "010" : 
                 if(findGreen==0) :
                     findGreen=1
-                    resp=b'000'#au robot n°1 : stop
+                    resp=b'000'#au robot n°1 : stop and wait
                 else :
                     findGreen=0
                     resp=b'011'#au robot n°2 : bouger
@@ -37,7 +39,7 @@ def couleur(robot):
             case "001" :
                 if(findBlue==0) :
                     findBlue=1
-                    resp=b'000'#au robot n°1 : stop
+                    resp=b'000'#au robot n°1 : stop and wait
                 else :
                     findBlue=0
                     resp=b'011'#au robot n°2 : bouger
@@ -47,7 +49,7 @@ def couleur(robot):
             case "100" : 
                 if(findRed==0) :
                     findRed=1
-                    resp=b'010'#au robot n°2 : stop
+                    resp=b'010'#au robot n°2 : stop and wait
                 else :
                     findRed=0
                     resp=b'001'#au robot n°1 : bouger
@@ -55,7 +57,7 @@ def couleur(robot):
             case "010" : 
                 if(findGreen==0) :
                     findGreen=1
-                    resp=b'010'#au robot n°2 : stop
+                    resp=b'010'#au robot n°2 : stop and wait
                 else :
                     findGreen=0
                     resp=b'001'#au robot n°1 : bouger
@@ -63,7 +65,7 @@ def couleur(robot):
             case "001" :
                 if(findBlue==0) :
                     findBlue=1
-                    resp=b'010'#au robot n°2 : stop
+                    resp=b'010'#au robot n°2 : stop and wait
                 else :
                     findBlue=0
                     resp=b'001'#au robot n°1 : bouger
@@ -82,8 +84,23 @@ def response(data):
     match data[:2] :#check quel robot
         case "00" :#Si robot n°1
             match data[2:5]:
-                case "001" : #croisement
-                    resp=b'1111' #A VOIR
+                case "001" : #croisement ( mettre dans CSV la data récupérée, process par carto.py, prise de la réponse dans un csv)
+                    fichier = open("data.csv",'a')
+                    cw = csv.writer(fichier)
+                    cw.writerow(data)
+                    fichier.close()
+                    while(True) :
+                        with fichier.open("answer0.csv", "r") as f:
+                            last_line = f.readlines()[-1]
+                            print(last_line)
+                            if (last_line != ""):
+                                resp=last_line
+                                break
+                    ans = open("answer0.csv",'w')
+                    cw = csv.writer(ans)
+                    cw.writerow("")
+                    ans.close()
+
                 case "010" :#obstacle
                     resp=b'008'#demi-tour
                 case "011" : #couleur
@@ -92,7 +109,21 @@ def response(data):
         case "01" :#Si robot n°2
             match data[2:5]:
                 case "001" : #croisement
-                    resp=b'111'
+                    fichier = open("data.csv",'a')
+                    cw = csv.writer(fichier)
+                    cw.writerow(data)
+                    fichier.close()
+                    while(True) :
+                        with fichier.open("answer1.csv", "r") as f:
+                            last_line = f.readlines()[-1]
+                            print(last_line)
+                            if (last_line != ""):
+                                resp=last_line
+                                break
+                    ans = open("answer1.csv",'w')
+                    cw = csv.writer(ans)
+                    cw.writerow("")
+                    ans.close()
                 case "010" :#obstacle
                     resp=b'018'#demi-tour
                 case "011" : #couleur
@@ -103,7 +134,7 @@ def response(data):
 async def main():
     print("Searching Arduino Nano ESP32 'LED' device, please wait...")
     # Scan BLE devices for timeout seconds and return discovered devices with advertising data
-    devices = await BleakScanner.discover(timeout=20,
+    devices = await BleakScanner.discover(timeout=10,
                                           return_adv=True)
     for ble_device, adv_data in devices.values():
         print(ble_device)
@@ -125,7 +156,7 @@ async def main():
                     except Exception as e:
                         print(f"Error:{e}")
                         await asyncio.sleep(1.0)
-                        #write_value=b'0000'
+                        write_value=b'0'
                     #write_value = b"0110"
                     await client.write_gatt_char(UUIDTx, write_value)
                     #await asyncio.sleep(1.0)
