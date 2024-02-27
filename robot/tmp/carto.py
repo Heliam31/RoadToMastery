@@ -166,7 +166,7 @@ def recupInfo(i):
                 if(BitArray(bin=mess[2:5]).int == 1):
                     for x in range(4):
                         availinter[x] = int(row[0][x+5])
-
+    
 
   
     #direction disponibles
@@ -312,6 +312,10 @@ def updateEverySecond():
         elif (pos[1]==ouva[1]+1):
             dir = 3
     i.move(dir)           
+    
+    with open("data.csv", 'w') as fichier:
+            cw = csv.writer(fichier)
+            cw.writerow("")
     
     #------------------------------AFFICHE-----------------------------#    
 
