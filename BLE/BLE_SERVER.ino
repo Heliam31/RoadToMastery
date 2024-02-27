@@ -38,13 +38,28 @@ void setup() {
 
 void receiveEvent(int howMany)
 {
-  String data="00";//Robot 0
+  String id="00";
+  String data="";//Robot 0
   int remainder =0;
   while(0 < Wire.available()) // loop through all but the last
   {
     data = data + Wire.read();
   }
-  Serial.println(data); 
+  while (data > 0) {
+        remainder = data % 2;
+        binaryNumber = String(remainder) + binaryNumber;
+        data = data / 2;
+      }
+
+      while (binaryNumber.length() < 7) {
+        binaryNumber = binaryNumber + "0";
+      }
+
+    // Afficher le résultat
+    //Serial.print("Le nombre binaire est : ");
+    //Serial.println(binaryNumber);
+  data = id + data;
+  //Serial.println(data); 
   // Set the characteristic's value to be the array of bytes that is actually a string.
   writeChar.writeValue(data.c_str(),data.length());
   
@@ -75,24 +90,27 @@ void loop() {
     Serial.println(central.address());
     // while the central is still connected to peripheral:
     while (central.connected()) {
+      
       //sans I2C
-
-      String dataToSend = "00010";
+      /*
+      String dataToSend = "000011111";
       writeChar.writeValue(dataToSend.c_str(), dataToSend.length());
       
       int length = 4;
       byte value[length + 1];  // one byte more, to save the '\0' character!
       readChar.readValue(value, length);
       value[length] = '\0';  // make sure to null-terminate!
+      //byte lastByte = value[length - 2];
+      //byte lastFourBits = lastByte & 0b00001111;
       Serial.print("Characteristic event, written: ");
       Serial.println((char *) value);
 
-      delay(1000);
+      delay(1000);*/
       
       //AVEC I2C
-      //Wire.onReceive(receiveEvent);
-      //Wire.onRequest(requestEvent);
-    
+      Wire.onReceive(receiveEvent);
+      Wire.onRequest(requestEvent);
+      delay(1000);
   }
     // the central has disconnected
     Serial.println("Disconnected from central: ");

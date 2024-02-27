@@ -80,29 +80,39 @@ def response(data):
     # trois derniers : data[-3:]
     #au milieu : data[2:5]
 
-    resp=b'10000'
+    resp=b'0000'
     match data[:2] :#check quel robot
         case "00" :#Si robot n°1
             match data[2:5]:
                 case "001" : #croisement ( mettre dans CSV la data récupérée, process par carto.py, prise de la réponse dans un csv)
-                    fichier = open("data.csv",'a')
-                    cw = csv.writer(fichier)
-                    cw.writerow(data)
+                    fichier = open('data.csv','w')
+                    #cw = csv.writer(fichier)
+                    #cw.writerow("kiki")
+                    fichier.write(data)
                     fichier.close()
+                    f = open('data.csv','r')
+                    for lines in f : 
+                        print("la ligne: ",lines)
+                    f.close()
                     while(True) :
-                        with fichier.open("answer0.csv", "r") as f:
-                            last_line = f.readlines()[-1]
-                            print(last_line)
-                            if (last_line != ""):
-                                resp=last_line
-                                break
+                        with open('answer0.csv') as csvfile:
+                            spamreader = csv.reader(csvfile)
+                            for row in spamreader:
+                                if (row != ""):
+                                    #print("ligne: ", row)
+                                    row = row[2] + row[3] + row[4] + row[5]
+                                    resp=bytearray(row,encoding='utf-8')
+                                    print("next position:",resp)
+                                    break
+                        break
+
                     ans = open("answer0.csv",'w')
                     cw = csv.writer(ans)
                     cw.writerow("")
                     ans.close()
 
                 case "010" :#obstacle
-                    resp=b'008'#demi-tour
+                    resp=b'001000'#demi-tour
                 case "011" : #couleur
                     resp=couleur(data)
 
@@ -114,18 +124,17 @@ def response(data):
                     cw.writerow(data)
                     fichier.close()
                     while(True) :
-                        with fichier.open("answer1.csv", "r") as f:
+                        with open("answer1.csv", "r") as f:
                             last_line = f.readlines()[-1]
-                            print(last_line)
                             if (last_line != ""):
-                                resp=last_line
+                                resp=bytearray(last_line,encoding='utf-8')
                                 break
                     ans = open("answer1.csv",'w')
                     cw = csv.writer(ans)
                     cw.writerow("")
                     ans.close()
                 case "010" :#obstacle
-                    resp=b'018'#demi-tour
+                    resp=b'011000'#demi-tour
                 case "011" : #couleur
                     resp=couleur(data)
 
@@ -137,7 +146,7 @@ async def main():
     devices = await BleakScanner.discover(timeout=10,
                                           return_adv=True)
     for ble_device, adv_data in devices.values():
-        print(ble_device)
+        #print(ble_device)
         if ble_device.name == 'LED':
             print("Device found")
 
@@ -147,7 +156,6 @@ async def main():
                 print("Connected to device")
                 while True:
                     try :
-                        print("oui")
                         data=await client.read_gatt_char(UUIDRx)
                         print("Received: {0}".format("".join(map(chr, data))))                    
                         print(format("".join(map(chr, data))))
@@ -161,7 +169,7 @@ async def main():
                     await client.write_gatt_char(UUIDTx, write_value)
                     #await asyncio.sleep(1.0)
                     data=await client.read_gatt_char(UUIDTx)
-                    print("Received2: {0}".format("".join(map(chr, data))))
+                    print("Response : {0}".format("".join(map(chr, data))))
                     await asyncio.sleep(1.0)
                        
 if __name__ == "__main__":
