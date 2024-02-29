@@ -11,7 +11,7 @@
 void init_tim7_and_interrupts();
 
 #define NB_ROADS 4
-unsigned int distance = 0;
+unsigned int distance = 99999;
 int isR = 0, isG = 0;
 volatile int TIM7_triggered = 0;
 int sonarFreq = 0;
@@ -24,12 +24,13 @@ void enable_clk(void) {
 	RCC_AHB1ENR |= RCC_GPIOCEN;
 	RCC_AHB1ENR |= RCC_GPIODEN;
 
-	RCC_APB1ENR |= RCC_TIM2EN;
-	RCC_APB1ENR |= RCC_TIM3EN;
-    RCC_APB1ENR |= RCC_TIM4EN;
-	RCC_APB1ENR |= RCC_TIM5EN;
-	RCC_APB1ENR |= RCC_TIM6EN;
-	RCC_APB1ENR |= RCC_TIM7EN; // for sync
+	RCC_APB1ENR |= RCC_TIM2EN; // SONAR 
+	RCC_APB1ENR |= RCC_TIM3EN; // PWM
+    RCC_APB1ENR |= RCC_TIM4EN; // IR
+	RCC_APB1ENR |= RCC_TIM5EN; // I2C
+	RCC_APB1ENR |= RCC_TIM6EN; // delays
+	RCC_APB1ENR |= RCC_TIM7EN; // interruption
+	// RCC_APB1ENR |= RCC_TIM12EN; // colors
 
     RCC_APB1ENR |= RCC_I2C1EN | RCC_TIM5EN;
 	RCC_AHB1ENR |= RCC_GPIOBEN;
@@ -57,7 +58,7 @@ void handle_SONAR() {
     TIM7_SR = ~TIM_UIF;
     TIM7_triggered = 1;
 
-    sonarFreq = (sonarFreq + 1) % 12;
+    sonarFreq = (sonarFreq + 1) % 8;
 }
 
 void init_tim7_and_interrupts() {
@@ -179,6 +180,23 @@ State choose_direction(int reg){
     }
 }
 
+int convert_road_bits(int *roads){
+    int res = 0;
+    if(roads[LEFT] == 1){
+        res += 4;
+    }
+    if(roads[RIGHT] == 1){
+        res += 1;
+    }
+    if(roads[BACK] == 1){
+        res += 8;
+    }
+    if(roads[FRONT] == 1){
+        res += 2;
+    }
+    return res+16;
+}
+
 int main (void) {
     enable_clk();
     init();
@@ -203,8 +221,12 @@ int main (void) {
 
     int tmpRoads[NB_ROADS] = {0};
 
+    // COM
+    uint8_t reg_send[1] = {0}; //reg to send
+    uint8_t reg_receive[1] = {0}; //reg to recieve
+
     while(1) {
-        
+
         qtr8rc_read(irValues, OFF);
         compute_position(&position, irValues);
         
@@ -213,9 +235,10 @@ int main (void) {
                 pid_compute_speeds(&leftSpeed, &rightSpeed, &position);
                 get_avaible_roads(roads, irValues);
                 if ((on_junction(roads) == 0) && stop) {
-                    state = STOP;
+                    state = IDLE;
                     motor_disable(M_LEFT); leftSpeed = 0;
                     motor_disable(M_RIGHT); rightSpeed = 0;
+                    reg_send[0] = convert_road_bits(roads);
                     stop = 0;
                 } else if ((on_junction(roads) == 1)) {
                     tmpRoads[LEFT] = roads[LEFT];
@@ -224,36 +247,49 @@ int main (void) {
                 }
                 break;
 
-            case STOP:
-                delay_ms(10);
-                // motor_disable(M_LEFT); leftSpeed = 0;
-                // motor_disable(M_RIGHT); rightSpeed = 0;
+            case IDLE:
+                DISABLE_IRQS;
+                delay_ms(30);
+                motor_disable(M_LEFT); leftSpeed = 0;
+                motor_disable(M_RIGHT); rightSpeed = 0;
+                // delay_ms(2000);
+                // led_turn_on(BLUE_LED);
                 // button_wait(BUTTON);
                 
-                // ///////////// I2C AJOUT /////////////////
-                // uint8_t reg_send[2] = { 1, 0b0101}; //reg à send
-                // uint8_t reg_receive[1] = {0}; //reg pour demander des données
-                // // printf("Loop\n");
-                // i2c_send(ESP32_ADDR, reg_send , 2); //on send des données
-                // // printf("bien send\n");
-                // i2c_receive(ESP32_ADDR, reg_receive, 1); //on demande des données
-                // // printf("receive\n");
-                // while((TIM5_SR & TIM_UIF) == 0);
-         		// TIM5_SR = 0;
-                // direction = choose_direction(reg_receive[0]);
-                // // printf("La direction est : %d\n", direction);
-                // /////////////////////////////////////////
+                ///////////// I2C AJOUT /////////////////
+                printf("Loop\n");
+                i2c_send(ESP32_ADDR, reg_send , 1); //on send des données
+                // printf("bien send\n");
+                i2c_receive(ESP32_ADDR, reg_receive, 1); //on demande des données
+                // printf("receive\n");
+                while((TIM5_SR & TIM_UIF) == 0);
+         		TIM5_SR = 0;
+                direction = choose_direction(reg_receive[0]);
+                // printf("La direction est : %d\n", direction);
+                /////////////////////////////////////////
+                state = DECISION;
 
-                if (direction == FRONT) {
-                    if ((on_road(irValues) == 1) && roads[FRONT]) {
-                        state = FOLLOW;
-                    } // else = no front road -> STOP 
-                } else {
-                    state = TURN;
-                }
+                // if (direction == FRONT) {
+                //     if ((on_road(irValues) == 1) && roads[FRONT]) {
+                //         state = FOLLOW;
+                //     }
+                // }
+                // led_turn_on(BLUE_LED);
+                // isR = 0;
+                // isG = 0;
+                // TIM7_triggered = 0;
+                // sonarFreq = 0;
+                // ENABLE_IRQS;
+                
                 break;
-            
-            case TURN:
+
+            case DECISION:
+                isR = 0;
+                isG = 0;
+                TIM7_triggered = 0;
+                sonarFreq = 0;
+                ENABLE_IRQS;
+
                 if (direction == LEFT) {
                     state = S_LEFT;
                 } else if (direction == RIGHT) {
@@ -265,13 +301,13 @@ int main (void) {
                 break;
 
             case S_RIGHT:
-                if (irValues[0] == 1000) {
+                if (irValues[0] == 2000) {
                     state = CHECK2;
                 }
                 break;
             
             case S_LEFT:
-                if (irValues[7] == 1000) {
+                if (irValues[7] == 2000) {
                     state = CHECK7;
                 }
                 break;
@@ -281,77 +317,74 @@ int main (void) {
                     tmpRoads[LEFT] = 0;
                     tmpRoads[RIGHT] = 0;
                     state = S_LEFT;
-                } else if (irValues[7] == 1000) {
+                } else if (irValues[7] == 2000) {
                     state = CHECK8_WHITE;
                 }
                 break;
             
             case CHECK2:
-                if (irValues[1] == 1000) {
+                if (irValues[1] == 2000) {
                     state = CHECK3;
                 }
                 break;
             
             case CHECK3:
-                if (irValues[2] == 1000) {
+                if (irValues[2] == 2000) {
                     state = CHECK4;
                 }
                 break;
             
             case CHECK4:
-                if (irValues[3] == 1000) {
+                if (irValues[3] == 2000) {
                     state = FOLLOW;
                 }
                 break;
             
             case CHECK5:
-                if (irValues[4] == 1000) {
+                if (irValues[4] == 2000) {
                     state = FOLLOW;
                 }
                 break;
             
             case CHECK6:
-                if (irValues[5] == 1000) {
+                if (irValues[5] == 2000) {
                     state = CHECK5;
                 }
                 break;
             
             case CHECK7:
-                if (irValues[6] == 1000) {
+                if (irValues[6] == 2000) {
                     state = CHECK6;
                 }
                 break;
             
             case CHECK8_WHITE:
-                if (irValues[7] < 1000) {
+                if (irValues[7] < 2000) {
                     state = S_LEFT;
                 }
                 break;
         }
-        // display_irValues(irValues);
-        // printf("%d:", position);
-        // printf("left: %d | right: %d\n",leftSpeed, rightSpeed);
-        // display_direction(direction);
-        // display_state(state);
+
         motor_set_speeds(leftSpeed, rightSpeed);
 
         if (TIM7_triggered) {
-            if (sonarFreq >= 7) {
+            if (sonarFreq >= 4) {
+                init_tim2_sonar();
                 sonar_read(&distance);
-                if (distance <= 15)
-                    state = STOP;
-                // printf("SONAR : %d\n",distance);
+                if (distance <= 15 && distance > 0){
+                    state = IDLE;
+                    reg_send[0] = 0b0100000;
+                }
             }
+
             else {
                 color_read(&isR, &isG);
-                if (isR && !isG)
-                    state = STOP;
-                // printf("%d | %d\n",isR, isG);
+                if (isR && !isG){
+                    state = IDLE;
+                    reg_send[0] = 0b0110000; 
+                }
             }
-            
-            // sonar_read(&distance);
-            // if (distance < 11) state = STOP;
-            // printf("distance: %d\n",distance);
+
             TIM7_triggered = 0;
         }
     }

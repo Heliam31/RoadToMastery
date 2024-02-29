@@ -22,10 +22,10 @@
 #define BLUE_FILTER   3
 
 // Calibration
-int redMin = 17500; //20487;
-int redMax = 84000; //105000;
-int greenMin = 13333; //17500;
-int greenMax = 76363; //93333;
+int redMin = 599; //20487;
+int redMax = 2441; //105000;
+int greenMin = 566; //17500;
+int greenMax = 1327; //93333;
 int blueMin = 20487; //20487;
 int blueMax = 31111; //105000;
 
@@ -38,7 +38,6 @@ int redFrequency = 0;
 int greenFrequency = 0;
 int blueFrequency = 0;
 
-void set_scaling(int scaling);
 
 // Init
 void init_gpio_color(void) {
@@ -65,8 +64,9 @@ void color_init(void) {
     init_gpio_color();
 }
 
+// PRIVATE
 void set_filter(uint8_t filter) {
-    GPIOB_BSRR = (1 << (S0_PIN +16)) | (1 << (S1_PIN +16))  | (1 << (S2_PIN +16))  | (1 << (S3_PIN +16)) ; // Reset all filter pins
+    GPIOB_BSRR = (1 << (S0_PIN +16)) | (1 << (S1_PIN +16))  | (1 << (S2_PIN +16))  | (1 << (S3_PIN +16)); // Reset all filter pins
     GPIOB_BSRR = (1 << (S0_PIN+16));
     GPIOB_BSRR = (1 << (S1_PIN));
 
@@ -86,7 +86,7 @@ void set_filter(uint8_t filter) {
     }
 }
 
-
+// It works so it's good ?!
 int get_color(uint8_t color) {
     int Output_Color = 0;
 
@@ -95,67 +95,36 @@ int get_color(uint8_t color) {
     uint32_t period = 0;
     uint32_t frequency = 0;
 
-
-    RCC_APB1ENR |= RCC_TIM5EN;
-
-    // Configure TIM5
-    TIM5_PSC = 81; // Prescaler
-    TIM5_ARR = 20000; // Auto-reload
-    TIM5_CR1 |= TIM_CEN; // Enable Timer 3
-    TIM5_CNT = 0; // Reset timer counter
-    TIM5_SR = 0; // Reset timer counter
+    // Configure TIM2
+    TIM2_PSC = 81; // Prescaler
+    TIM2_ARR = 20000; // Auto-reload
+    TIM2_CR1 |= TIM_CEN; // Enable Timer 3
+    TIM2_CNT = 0; // Reset timer counter
+    TIM2_SR = 0; // Reset timer counter
 
     set_filter(color);
-    high_time = TIM5_CNT;
+    high_time = TIM2_CNT;
     while (!(GPIOB_IDR & (1 << SENSOR_OUT_PIN)));// Wait for rising edge
-        high_time = TIM5_CNT - high_time;
+        high_time = TIM2_CNT - high_time;
 
     while ((GPIOB_IDR & (1 << SENSOR_OUT_PIN))); // Wait for falling edge
-        low_time = TIM5_CNT;
+        low_time = TIM2_CNT;
 
     if (low_time > high_time)
         period =  low_time - high_time;
     else
-        period = TIM5_ARR - high_time + low_time;
+        period = TIM2_ARR - high_time + low_time;
     
-    uint32_t time_in_micro = (period * 1000000) / (TIM5_ARR); // Convert to microseconds
+    uint32_t time_in_micro = (period * 1000000) / (TIM2_ARR); // Convert to microseconds
 
-    frequency = (APB1_CLK / (time_in_micro)); // Assuming TIM5 is running at SystemCoreClock
+    frequency = (APB1_CLK / (time_in_micro)); // Assuming TIM2 is running at SystemCoreClock
 
 
-    TIM5_CR1 &= ~TIM_CEN; // Disable Timer 5
+    TIM2_CR1 &= ~TIM_CEN; // Disable Timer 5
 
     set_filter(CLEAR_FILTER);
 
     return frequency; 
-}
-
-
-void set_color(char color) {
-    GPIOB_BSRR = (1 << (S2_PIN +16))  | (1 << (S3_PIN +16)); // Réinitialiser tous les pins de filtre
-
-    switch (color) {
-        case 'r':
-            GPIOB_BSRR |= (1 << (S2_PIN+16));
-            GPIOB_BSRR |= (1 << (S3_PIN+16));
-            break;
-        case 'b':
-            GPIOB_BSRR |= (1 << (S2_PIN+16));
-            GPIOB_BSRR |= (1 << (S3_PIN));
-            break;
-        case 'c':
-            GPIOB_BSRR |= (1 << (S2_PIN));
-            GPIOB_BSRR |= (1 << (S3_PIN+16));
-            break;
-        case 'g':
-            GPIOB_BSRR |= (1 << (S2_PIN));
-            GPIOB_BSRR |= (1 << (S3_PIN));
-            break;
-        default:
-            GPIOB_BSRR |= (1 << (S2_PIN));
-            GPIOB_BSRR |= (1 << (S3_PIN+16));
-            break;
-    }
 }
 
 int get_rgb_value(char color){
@@ -181,12 +150,17 @@ int get_rgb_value(char color){
     return rgb_value;
 }
 
+// PUBLIC
+
 void color_read(int *isR, int *isG) {
     redFrequency = get_color(RED_FILTER);
     greenFrequency = get_color(GREEN_FILTER);
 
     redColor = get_rgb_value('r');
     greenColor = get_rgb_value('g');
+
+    // printf("%d %d\n",redFrequency,greenFrequency);
+    // printf("%d %d\n",redColor,greenColor);
     
     if (redColor > 250 && greenColor > 250) {
         *isR = 0;

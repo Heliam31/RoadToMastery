@@ -47,7 +47,7 @@
 #define ID_TIM5		3
 #define ID_TIM6		4
 #define ID_TIM7		5
-#define ID_TIM12	6
+#define ID_TIM12	6 
 #define ID_TIM13	7
 #define ID_TIM14	8
 
