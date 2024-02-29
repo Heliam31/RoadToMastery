@@ -20,74 +20,68 @@ def couleur(robot):
     global findBlue
     if (robot[:2]=="00"):
         match robot[-3:] : #robot n°1
-            case "100" : 
+            case "100" : #test rouge ?
                 if(findRed==0) :
                     findRed=1
-                    resp=b'000'#au robot n°1 : stop and wait
+                    resp=b'000000'#au robot n°1 : stop and wait
                 else :
                     findRed=0
-                    resp=b'011'#au robot n°2 : bouger
+                    resp=b'010010'#au robot n°2 : bouger devant
                 print("rouge trouvé")
-            case "010" : 
+            case "010" : #test vert ? 
                 if(findGreen==0) :
                     findGreen=1
-                    resp=b'000'#au robot n°1 : stop and wait
+                    resp=b'000000'#au robot n°1 : stop and wait
                 else :
                     findGreen=0
-                    resp=b'011'#au robot n°2 : bouger
+                    resp=b'010010'#au robot n°2 : bouger
                 print("vert trouvé")
-            case "001" :
+            case "001" :# test bleu ?
                 if(findBlue==0) :
                     findBlue=1
-                    resp=b'000'#au robot n°1 : stop and wait
+                    resp=b'000000'#au robot n°1 : stop and wait
                 else :
                     findBlue=0
-                    resp=b'011'#au robot n°2 : bouger
+                    resp=b'010010'#au robot n°2 : bouger
                 print("bleu trouvé")
     else :
         match robot[-3:] : #robot n°2
             case "100" : 
                 if(findRed==0) :
                     findRed=1
-                    resp=b'010'#au robot n°2 : stop and wait
+                    resp=b'010000'#au robot n°2 : stop and wait
                 else :
                     findRed=0
-                    resp=b'001'#au robot n°1 : bouger
+                    resp=b'000010'#au robot n°1 : bouger
                 print("rouge trouvé")
             case "010" : 
                 if(findGreen==0) :
                     findGreen=1
-                    resp=b'010'#au robot n°2 : stop and wait
+                    resp=b'010000'#au robot n°2 : stop and wait
                 else :
                     findGreen=0
-                    resp=b'001'#au robot n°1 : bouger
+                    resp=b'000010'#au robot n°1 : bouger
                 print("vert trouvé")
             case "001" :
                 if(findBlue==0) :
                     findBlue=1
-                    resp=b'010'#au robot n°2 : stop and wait
+                    resp=b'010000'#au robot n°2 : stop and wait
                 else :
                     findBlue=0
-                    resp=b'001'#au robot n°1 : bouger
+                    resp=b'000010'#au robot n°1 : bouger
                 print("bleu trouvé")
-    print(resp)
-    print(findRed,findGreen,findBlue)
+    #print(resp)
+    #print(findRed,findGreen,findBlue)
     return resp
 
 
 def response(data):
-    # trois premiers : print(data[:3])
-    # trois derniers : data[-3:]
-    #au milieu : data[2:5]
-
-    resp=b'0000'
+    resp=b'0000' #valeur par défaut 
     match data[:2] :#check quel robot
         case "00" :#Si robot n°1
-            match data[2:5]:
+            match data[2:5]:#Type
                 case "001" : #croisement ( mettre dans CSV la data récupérée, process par carto.py, prise de la réponse dans un csv)
                     fichier = open('data.csv','w')
-                    #cw = csv.writer(fichier)
-                    #cw.writerow("kiki")
                     fichier.write(data)
                     fichier.close()
                     f = open('data.csv','r')
@@ -99,14 +93,13 @@ def response(data):
                             spamreader = csv.reader(csvfile)
                             for row in spamreader:
                                 if (row != ""):
-                                    #print("ligne: ", row)
-                                    row = row[2] + row[3] + row[4] + row[5]
+                                    print("ligne: ", row)
+                                    row = row[2] + row[3] + row[4] + row[5] #Méthode un peu bourrin pour transformer en array
                                     resp=bytearray(row,encoding='utf-8')
                                     print("next position:",resp)
                                     break
                         break
-
-                    ans = open("answer0.csv",'w')
+                    ans = open("answer0.csv",'w') #On enlève les données dans ce CSV pour ne pas les reprendre
                     cw = csv.writer(ans)
                     cw.writerow("")
                     ans.close()
@@ -117,18 +110,23 @@ def response(data):
                     resp=couleur(data)
 
         case "01" :#Si robot n°2
-            match data[2:5]:
+            match data[2:5]: #Type
                 case "001" : #croisement
                     fichier = open("data.csv",'a')
                     cw = csv.writer(fichier)
                     cw.writerow(data)
                     fichier.close()
                     while(True) :
-                        with open("answer1.csv", "r") as f:
-                            last_line = f.readlines()[-1]
-                            if (last_line != ""):
-                                resp=bytearray(last_line,encoding='utf-8')
-                                break
+                        with open('answer1.csv') as csvfile:
+                            spamreader = csv.reader(csvfile)
+                            for row in spamreader:
+                                if (row != ""):
+                                    #print("ligne: ", row)
+                                    row = row[2] + row[3] + row[4] + row[5] #Méthode un peu bourrin pour transformer en array
+                                    resp=bytearray(row,encoding='utf-8')
+                                    print("next position:",resp)
+                                    break
+                        break
                     ans = open("answer1.csv",'w')
                     cw = csv.writer(ans)
                     cw.writerow("")
@@ -143,32 +141,26 @@ def response(data):
 async def main():
     print("Searching Arduino Nano ESP32 'LED' device, please wait...")
     # Scan BLE devices for timeout seconds and return discovered devices with advertising data
-    devices = await BleakScanner.discover(timeout=10,
+    devices = await BleakScanner.discover(timeout=15,
                                           return_adv=True)
     for ble_device, adv_data in devices.values():
         #print(ble_device)
-        if ble_device.name == 'LED':
+        if ble_device.name == 'ROBOT': # Connect by the device name
             print("Device found")
-
             # Connect to Arduino Nano ESP 32 device
             async with BleakClient(ble_device.address) as client:
-                
                 print("Connected to device")
                 while True:
-                    try :
-                        data=await client.read_gatt_char(UUIDRx)
-                        print("Received: {0}".format("".join(map(chr, data))))                    
-                        print(format("".join(map(chr, data))))
-                        write_value=response(format("".join(map(chr, data))))
-                        print(write_value)
-                    except Exception as e:
+                    try : 
+                        data=await client.read_gatt_char(UUIDRx) #Read from the write char of the server
+                        print("Received: {0}".format("".join(map(chr, data)))) 
+                        write_value=response(format("".join(map(chr, data)))) # Process the data       
+                    except Exception as e: #if error
                         print(f"Error:{e}")
-                        await asyncio.sleep(1.0)
-                        write_value=b'0'
-                    #write_value = b"0110"
-                    await client.write_gatt_char(UUIDTx, write_value)
-                    #await asyncio.sleep(1.0)
-                    data=await client.read_gatt_char(UUIDTx)
+                        write_value=b'0000'
+                    #write_value = b"0110" #To test the response if needed 
+                    await client.write_gatt_char(UUIDTx, write_value) #update the read char of the server with the response
+                    data=await client.read_gatt_char(UUIDTx) #verify the response, not mandatory 
                     print("Response : {0}".format("".join(map(chr, data))))
                     await asyncio.sleep(1.0)
                        

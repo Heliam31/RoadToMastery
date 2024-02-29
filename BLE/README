@@ -1,0 +1,25 @@
+Prérequis : 
+- BLEAK (pip install bleak)
+- Arduino IDE
+
+A priori cela peut fonctionner avec toutes les cartes tant qu'elles ont du bluetooth 4.0 ou plus
+
+
+Fichiers : 
+- BLE_SERVER.ino : serveur BLE + slave I2C
+- BLE_CLIENT_ON_PC.py : client BLE + traitement des données
+- carto.py : cartographie + choix de direction
+- data.csv : fichier de transit des données entre client BLE + carto
+- answer0/1.csv : réponses pour robot 1 ou 2.
+
+
+Dossier cartosimu : 
+Simulation pour la cartographie seulement
+
+
+Lancement : 
+1 - En premier le serveur (code BLE_SERVER.ino à mettre sur arduino IDE connecté à une carte)
+2a - Ensuite le client (BLE_CLIENT_ON_PC.py), peut ne pas réussir à se connecter au service du premier coup (à lancer dans le même dossier que les CSV)
+2b - En parallèle lancer carto.py qui récupèrera les données dans data.csv dès qu'il y en aura et va afficher une page tkinter (à lancer dans le même dossier que les CSV)
+
+ 

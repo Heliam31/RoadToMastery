@@ -147,7 +147,6 @@ class Robot:
                 ident = ident + "1000"
             if self.relativeDirection == 3:
                 ident = ident + "0100"
-            print("to write: ", ident)
             cw.writerow(ident)
             fichier.close()
             return 1
@@ -157,113 +156,59 @@ class Robot:
 def recupInfo(i):
     #lecture csv recherche message du robot i
     id = i.getId()
-    availinter=[-1,-1,-1,-1] #arriere, gauche, avant, droite 
+    availinter=[0,0,0,0] #arriere, gauche, avant, droite 
     lastread = 0
     with open('data.csv') as csvfile:
         spamreader = csv.reader(csvfile)
         for row in spamreader:
-            if (len(row) > 0 ):
-                mess = row[0]
-                if (BitArray(bin=mess[0:2]).int == id):
-                    if(BitArray(bin=mess[2:5]).int == 1):
-                        for x in range(4):
-                            availinter[x] = int(row[0][x+5])
+            mess = row[0]
+            if (BitArray(bin=mess[0:2]).int == id):
+                if(BitArray(bin=mess[2:5]).int == 1):
+                    for x in range(4):
+                        availinter[x] = int(row[0][x+5])
+    
 
-    if (availinter != [-1,-1,-1,-1]):
-        #direction disponibles
+  
+    #direction disponibles
+    
+    pos = i.getPresentPos()
+    
+    if (i.direction==0):
+        availinter = [availinter[2],availinter[3],availinter[0],availinter[1]]
+    elif (i.direction==1):
+        availinter = [availinter[1],availinter[2],availinter[3],availinter[0]]
+    elif (i.direction==2):
+        availinter = [availinter[0],availinter[1],availinter[2],availinter[3]]
+    elif (i.direction==3):
+        availinter = [availinter[3],availinter[0],availinter[1],availinter[2]]
+    if(pos[0]==0):
+        availinter[0] = -1
+    if(pos[0]==longueurX):
+        availinter[2] = -1
+    if(pos[1]==0):
+        availinter[3] = -1
+    if(pos[1]==longueurY):
+        availinter[1] = -1
 
-        pos = i.getPresentPos()
-
-        if (i.direction==0):
-            availinter = [availinter[2],availinter[3],availinter[0],availinter[1]]
-        elif (i.direction==1):
-            availinter = [availinter[1],availinter[2],availinter[3],availinter[0]]
-        elif (i.direction==2):
-            availinter = [availinter[0],availinter[1],availinter[2],availinter[3]]
-        elif (i.direction==3):
-            availinter = [availinter[3],availinter[0],availinter[1],availinter[2]]
-        if(pos[0]==0):
-            availinter[0] = -1
-        if(pos[0]==longueurX):
-            availinter[2] = -1
-        if(pos[1]==0):
-            availinter[3] = -1
-        if(pos[1]==longueurY):
-            availinter[1] = -1
-
-        incr=0
-        for e in tableau[pos[0]][pos[1]].getEdges():
-            if (e == 2):
-                availinter[incr] = -1
-            incr +=1
+    incr=0    
+    for e in tableau[pos[0]][pos[1]].getEdges():
+        if (e == 2):
+            availinter[incr] = -1
+        incr +=1
     return availinter  #[haut, droite, bas, gauche]
 
 def updateEverySecond():
     #------------------------------DECISION----------------------------#  
     
-    # i=robList[1]
-    # availinter = recupInfo(i)
-    # if (availinter!= [-1,-1,-1,-1]):
-    #     for x in range(4):
-    #         if (availinter[x]==0):
-    #             availinter[x]==2
-    #     pos = i.getPresentPos()
-    #     tableau[pos[0]][pos[1]].setEdges(availinter)
-    #     val = []
-    #     for z in range(4):
-    #         if(availinter[z]!=-1):
-    #             test = tableau[pos[0]][pos[1]]
-    #             if (z==0):
-    #                 test = tableau[pos[0]-1][pos[1]]
-    #             if (z==1):
-    #                 test = tableau[pos[0]][pos[1]+1]
-    #             if (z==2):
-    #                 test = tableau[pos[0]+1][pos[1]]
-    #             if (z==3):
-    #                 test = tableau[pos[0]][pos[1]-1]
-    #             if(test.getState() != 2):
-    #                 val.append(z)
-    #     dir = -1
-    #     for vp in val:
-    #         test = tableau[pos[0]][pos[1]]
-    #         if (vp==0):
-    #             test = tableau[pos[0]-1][pos[1]]
-    #         if (vp==1):
-    #             test = tableau[pos[0]][pos[1]+1]
-    #         if (vp==2):
-    #             test = tableau[pos[0]+1][pos[1]]
-    #         if (vp==3):
-    #             test = tableau[pos[0]][pos[1]-1]
-    #         if (test.getState() == 0):
-    #             dir = vp
-    #             break
-    #         if (test.getState() == 1):
-    #             dir = vp
-    #     if (dir == -1):
-    #         ouva = i.getOneHistory()
-    #         if (pos[0]==ouva[0]+1):
-    #             dir = 0
-    #         elif (pos[0]==ouva[0]-1):
-    #             dir = 2 
-    #         elif (pos[1]==ouva[1]-1):
-    #             dir = 1 
-    #         elif (pos[1]==ouva[1]+1):
-    #             dir = 3
-    #     i.move(dir)   
-
-  
-    #-----------------------ROBOT 2-------------------------#
-    i=robList[0]
+    i=robList[1]
     availinter = recupInfo(i)
-    if (availinter!= [-1,-1,-1,-1]):
-        for x in range(4):
-            if (availinter[x]==0):
-                availinter[x]==2
-        pos = i.getPresentPos()
-        tableau[pos[0]][pos[1]].setEdges(availinter)
-
-        val = []
-        z = 0
+    for x in range(4):
+        if (availinter[x]==0):
+            availinter[x]==2
+    pos = i.getPresentPos()
+    tableau[pos[0]][pos[1]].setEdges(availinter)
+    val = []
+    for z in range(4):
         if(availinter[z]!=-1):
             test = tableau[pos[0]][pos[1]]
             if (z==0):
@@ -275,58 +220,108 @@ def updateEverySecond():
             if (z==3):
                 test = tableau[pos[0]][pos[1]-1]
             if(test.getState() != 2):
-                
                 val.append(z)
-        for z in range(3, 0, -1):
-            if(availinter[z]!=-1):
-                if (z==0):
-                    test = tableau[pos[0]-1][pos[1]]
-                if (z==1):
-                    test = tableau[pos[0]][pos[1]+1]
-                if (z==2):
-                    test = tableau[pos[0]+1][pos[1]]
-                if (z==3):
-                    test = tableau[pos[0]][pos[1]-1]
-                if(test.getState() != 2):
-                    val.append(z)
-        dir = -1
-        for vp in val:
-            test = tableau[pos[0]][pos[1]]
-            if (vp==0):
+    dir = -1
+    for vp in val:
+        test = tableau[pos[0]][pos[1]]
+        if (vp==0):
+            test = tableau[pos[0]-1][pos[1]]
+        if (vp==1):
+            test = tableau[pos[0]][pos[1]+1]
+        if (vp==2):
+            test = tableau[pos[0]+1][pos[1]]
+        if (vp==3):
+            test = tableau[pos[0]][pos[1]-1]
+        if (test.getState() == 0):
+            dir = vp
+            break
+        if (test.getState() == 1):
+            dir = vp
+    if (dir == -1):
+        ouva = i.getOneHistory()
+        if (pos[0]==ouva[0]+1):
+            dir = 0
+        elif (pos[0]==ouva[0]-1):
+            dir = 2 
+        elif (pos[1]==ouva[1]-1):
+            dir = 1 
+        elif (pos[1]==ouva[1]+1):
+            dir = 3
+    i.move(dir)       
+    #-----------------------ROBOT 2-------------------------#
+    i=robList[0]
+    availinter = recupInfo(i)
+    for x in range(4):
+        if (availinter[x]==0):
+            availinter[x]==2
+    pos = i.getPresentPos()
+    tableau[pos[0]][pos[1]].setEdges(availinter)
+
+    val = []
+    z = 0
+    if(availinter[z]!=-1):
+        test = tableau[pos[0]][pos[1]]
+        if (z==0):
+            test = tableau[pos[0]-1][pos[1]]
+        if (z==1):
+            test = tableau[pos[0]][pos[1]+1]
+        if (z==2):
+            test = tableau[pos[0]+1][pos[1]]
+        if (z==3):
+            test = tableau[pos[0]][pos[1]-1]
+        if(test.getState() != 2):
+            
+            val.append(z)
+    for z in range(3, 0, -1):
+        if(availinter[z]!=-1):
+            if (z==0):
                 test = tableau[pos[0]-1][pos[1]]
-            if (vp==1):
+            if (z==1):
                 test = tableau[pos[0]][pos[1]+1]
-            if (vp==2):
+            if (z==2):
                 test = tableau[pos[0]+1][pos[1]]
-            if (vp==3):
+            if (z==3):
                 test = tableau[pos[0]][pos[1]-1]
-                
-            if (test.getState() == 0):
-                dir = vp
-                break
-            if (test.getState() == 1):
-                dir = vp
-        if (dir == -1):
-            ouva = i.getOneHistory()
-            if (pos[0]==ouva[0]+1):
-                dir = 0
-            elif (pos[0]==ouva[0]-1):
-                dir = 2 
-            elif (pos[1]==ouva[1]-1):
-                dir = 1 
-            elif (pos[1]==ouva[1]+1):
-                dir = 3
-        i.move(dir)           
+            if(test.getState() != 2):
+                val.append(z)
+    dir = -1
+    for vp in val:
+        test = tableau[pos[0]][pos[1]]
+        if (vp==0):
+            test = tableau[pos[0]-1][pos[1]]
+        if (vp==1):
+            test = tableau[pos[0]][pos[1]+1]
+        if (vp==2):
+            test = tableau[pos[0]+1][pos[1]]
+        if (vp==3):
+            test = tableau[pos[0]][pos[1]-1]
+            
+        if (test.getState() == 0):
+            dir = vp
+            break
+        if (test.getState() == 1):
+            dir = vp
+    if (dir == -1):
+        ouva = i.getOneHistory()
+        if (pos[0]==ouva[0]+1):
+            dir = 0
+        elif (pos[0]==ouva[0]-1):
+            dir = 2 
+        elif (pos[1]==ouva[1]-1):
+            dir = 1 
+        elif (pos[1]==ouva[1]+1):
+            dir = 3
+    i.move(dir)           
     
-        with open("data.csv", 'w') as fichier:
-            cw = csv.writer(fichier)
-            cw.writerow("")  
+    # with open("data.csv", 'w') as fichier:
+    #         cw = csv.writer(fichier)
+    #         cw.writerow("")
     
     #------------------------------AFFICHE-----------------------------#    
 
     
-    for i in range(longueurY):
-        for j in range(longueurX):
+    for i in range(longueurX):
+        for j in range(longueurY):
             haut, bas, gauche, droite = (None,)*4
             now = tableau[i][j].getState()
             if i != 0:
@@ -406,8 +401,8 @@ W = 500
 H = 400
 
 
-longueurX = 7
-longueurY = 5
+longueurX = 10
+longueurY = 10
 
 longueur_case = (W//(longueurX))-10
 largeur_case = (H//(longueurY))-10
@@ -427,11 +422,9 @@ for i in range(longueurY+1):
     for j in range(longueurX):
         tableau[i].append(Node())
 
-print ("taillex: ",len(tableau), "taille Y: ", len(tableau[0]))
-
 tableau[0][0].setState(2)
 tableau[0][0].setEdges([2,0,0,2])
-# robList[1].setDir(1)
+robList[1].setDir(1)
 robList[0].setDir(2)
 
 for i in range(longueurY):
@@ -450,7 +443,7 @@ for i in range(longueurY):
             tableau[i][j].setEdges([-1,-1,2,-1])
         tableau[i][j].setNeigh([[i-1,j],[i,j+1],[i+1,j],[i,j-1]])
 
-# robList[1].move(1)
+robList[1].move(1)
 robList[0].move(2)
 
 

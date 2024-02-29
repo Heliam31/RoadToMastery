@@ -1,6 +1,4 @@
 // Turns an Arduino Nano ESP32 into a Bluetooth® Low Energy peripheral.
-// This BLE peripheral is providing a service that allows a BLE central 
-// to switch on and off the internal LED of the Arduino Nano ESP32.
 // https://tutoduino.fr/
 // Copyleft 2023
 #include <ArduinoBLE.h>
@@ -10,9 +8,8 @@ BLEService Service("2ce4b983-2934-4e3a-abe5-1034ac6ca3f1"); // Bluetooth® Low E
 BLECharacteristic writeChar("2ce4b984-2934-4e3a-abe5-1034ac6ca3f1", BLERead | BLEWrite,10);
 BLECharacteristic readChar("2ce4b985-2934-4e3a-abe5-1034ac6ca3f1", BLERead | BLEWrite,10);
 
-
 void setup() {
-  Wire.begin(0x33);
+  Wire.begin(0x33); //Join I2C bus with address 0x33
   Serial.begin(9600);
 
   // BLE initialization
@@ -21,7 +18,7 @@ void setup() {
     while (1);
   }
   // set advertised local name and service UUID:
-  BLE.setLocalName("LED");
+  BLE.setLocalName("ROBOT");
   BLE.setAdvertisedService(Service);
   // add the characteristic to the service
   Service.addCharacteristic(writeChar);
@@ -29,60 +26,72 @@ void setup() {
   // add service
   BLE.addService(Service);
   // set the initial value for the characeristic:
-  writeChar.writeValue("110");
-  readChar.writeValue("100");
+  writeChar.writeValue("0000");
+  readChar.writeValue("0001");
   // start advertising
   BLE.advertise();
   Serial.println("BLE LED Peripheral");
+
+  Wire.onReceive(receiveEvent); // If I2C data received then receiEvent
+  Wire.onRequest(requestEvent); //If the other device request data the requestEvent
 }
 
 void receiveEvent(int howMany)
 {
-  String id="00";
-  String data="";//Robot 0
+  Serial.println("received I2C");
+  String id="00";//Robot 0, put "01" if other 
+  int data=0;
   int remainder =0;
-  while(0 < Wire.available()) // loop through all but the last
+  String binaryNumber="";
+  while(0 < Wire.available()) // get all of the data
   {
     data = data + Wire.read();
   }
-  while (data > 0) {
+  Serial.println(data);
+  while (data > 0) { // Convert to binary
         remainder = data % 2;
-        binaryNumber = String(remainder) + binaryNumber;
+        binaryNumber = String(remainder) + binaryNumber ;
         data = data / 2;
       }
+      
+  while (binaryNumber.length() < 7) { // put the missing 0 before
+    binaryNumber = "0" +binaryNumber;
+  }
+  Serial.print("Message received : ");
+  Serial.println(binaryNumber);
+  id = id + binaryNumber; // add the id in front of the data received
 
-      while (binaryNumber.length() < 7) {
-        binaryNumber = binaryNumber + "0";
-      }
+  writeChar.writeValue(id.c_str(),id.length()); // write the data on the characteristic
 
-    // Afficher le résultat
-    //Serial.print("Le nombre binaire est : ");
-    //Serial.println(binaryNumber);
-  data = id + data;
-  //Serial.println(data); 
-  // Set the characteristic's value to be the array of bytes that is actually a string.
-  writeChar.writeValue(data.c_str(),data.length());
-  
+  //Check if the write char has the right value :
+  /*
+  int length = 4;
+  byte value[length + 1];  // one byte more, to save the '\0' character!
+  writeChar.readValue(value, length);
+  value[length] = '\0';  // make sure to null-terminate!
+  Serial.print("Characteristic write : ");
+  Serial.println((char *) value);
+  */
+
 }
 
 
 void requestEvent()
 {
   int length = 4;
-  byte value[length + 1];  // one byte more, to save the '\0' character!
-  readChar.readValue(value, length);
+  byte value[length + 1];  
+  readChar.readValue(value, length); //read the BLE response 
   value[length] = '\0';  // make sure to null-terminate!
   Serial.print("Characteristic event, written: ");
   Serial.println((char *) value);
-
-  Wire.write((char *)value);
+  if (value != "0000"){
+  Wire.write((char *)value); // send the response with I2C
+  }
 }
 
 void loop() {
   // wait for a Bluetooth® Low Energy central
-  //Serial.println("connecting");
   BLEDevice central = BLE.central();
-  //Serial.println("connecting");
   // check if a central is connected to this peripheral
   if (central) {
     Serial.print("Connected to central: ");
@@ -91,7 +100,8 @@ void loop() {
     // while the central is still connected to peripheral:
     while (central.connected()) {
       
-      //sans I2C
+      //If needed for test without I2C :
+      // -------------
       /*
       String dataToSend = "000011111";
       writeChar.writeValue(dataToSend.c_str(), dataToSend.length());
@@ -106,10 +116,16 @@ void loop() {
       Serial.println((char *) value);
 
       delay(1000);*/
-      
-      //AVEC I2C
-      Wire.onReceive(receiveEvent);
-      Wire.onRequest(requestEvent);
+      //----------------
+
+
+      //Already in setup() but just in case:
+      //Wire.onReceive(receiveEvent);
+      //Wire.onRequest(requestEvent);
+
+      String dataToSend = "0000"; //Reset the value if nothing received by I2C
+      writeChar.writeValue(dataToSend.c_str(), dataToSend.length());
+
       delay(1000);
   }
     // the central has disconnected
