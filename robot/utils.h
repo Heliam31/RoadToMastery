@@ -28,7 +28,7 @@
 // =============== states & directions ===============
 typedef enum calibration_e {ON, OFF} Calibration;
 typedef enum state_e {
-    FOLLOW, STOP, TURN, // main states
+    FOLLOW, IDLE, DECISION, // main states
     S_LEFT, S_RIGHT, S_BACK,  // sub states
     CHECK2, CHECK3, CHECK4, CHECK5, CHECK6, CHECK7, CHECK8_WHITE // subsub states
 } State;

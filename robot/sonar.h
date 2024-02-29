@@ -3,5 +3,6 @@
 
 void sonar_init(void);
 void sonar_read(unsigned int* distance);
+void init_tim2_sonar();
 
 #endif

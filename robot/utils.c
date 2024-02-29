@@ -212,11 +212,8 @@ void display_state(State state){
     case FOLLOW:
         printf("State:FOLLOW\n");
         break;
-    case STOP:
-        printf("State:STOP\n");
-        break;
-    case TURN:
-        printf("State:TURN\n");
+    case DECISION:
+        printf("State:DECISION\n");
         break;
     case S_LEFT:
         printf("State:LEFT\n");
