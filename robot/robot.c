@@ -260,7 +260,7 @@ int main (void) {
                 // button_wait(BUTTON);
                 
                 ///////////// I2C AJOUT /////////////////
-                printf("Loop\n");
+                // printf("Loop\n");
                 i2c_send(ESP32_ADDR, reg_send , 1); //on send des données
                 // printf("bien send\n");
                 i2c_receive(ESP32_ADDR, reg_receive, 1); //on demande des données
@@ -287,12 +287,14 @@ int main (void) {
                 break;
 
             case DECISION:
+                // Reset values just in case; 
                 isR = 0;
                 isG = 0;
                 TIM7_triggered = 0;
                 sonarFreq = 0;
-                ENABLE_IRQS;
+                distance = 99999;
 
+                // Making the decision
                 if (direction == LEFT) {
                     state = S_LEFT;
                 } else if (direction == RIGHT) {
@@ -301,6 +303,9 @@ int main (void) {
                     state = S_BACK;
                 }
                 move_on_line(&leftSpeed, &rightSpeed, &direction);
+                
+                
+                ENABLE_IRQS;
                 break;
 
             case S_RIGHT:
